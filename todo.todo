@@ -1,0 +1,11 @@
+todo:
+    ☐ movement
+    ☐ text dialogue
+    ☐ sound effect
+    ☐ music
+    ☐ variation in screen size
+    ☐ instanced image
+    ☐ leva receiving data
+    ☐ build with tools.build
+    ☐ native build
+    ☐ flag-like behaviour in rules engine (query-once then delete, potentially YAGNI)
