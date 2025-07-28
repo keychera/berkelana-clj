@@ -80,8 +80,14 @@
 ;; leva
 (defn main-panel []
   [leva/Controls
-   {:folder {:name "Control"}
-    :schema {:color {:r 200 :g 120 :b 120
+   {:schema {:crop? {:value false
+                     :onChange (fn [value]
+                                 (swap! session/session* o/insert ::session/leva-spritesheet ::session/crop? value))}
+             :frame {:value 0
+                     :step 1 :min 0 :max 47
+                     :onChange (fn [value]
+                                 (swap! session/session* o/insert ::session/leva-spritesheet ::session/frame value))}
+             :color {:r 200 :g 120 :b 120
                      :onChange (fn [{:keys [r g b]}]
                                  (swap! session/session* o/insert ::session/leva-color
                                         {::session/r r ::session/g g ::session/b b}))}

@@ -43,15 +43,34 @@
     (compile-all game session/session*)))
 
 (defn render-sprites-esses [game session game-width game-height]
-  (let [sprite-esses (o/query-all session ::session/sprite-esse)]
+  (let [sprite-esses (o/query-all session ::session/sprite-esse)
+        {:keys [crop? frame-index]} (first (o/query-all session ::session/leva-spritesheet))]
+    (println crop?)
     (doseq [sprite-esse sprite-esses]
       (let [{:keys [x y current-sprite]} sprite-esse]
-        (c/render game
-                  (-> current-sprite
-                      (t/project game-width game-height)
-                      (t/translate x y)
-                      (t/scale (:width current-sprite)
-                               (:height current-sprite))))))))
+        (if crop?
+          (let [spritesheet-width 384
+                frame-width 32
+                frame-height 32
+                frames-per-row (/ spritesheet-width frame-width)
+                frame-x (mod frame-index frames-per-row)
+                frame-y (quot frame-index frames-per-row)
+                crop-x (* frame-x frame-width)
+                crop-y (* frame-y frame-height)
+                scale 4]
+            (c/render game
+                      (-> current-sprite
+                          (t/project game-width game-height)
+                          (t/translate x y)
+                          (t/crop crop-x crop-y frame-width frame-height)
+                          (t/scale (* frame-width scale) (* frame-height scale)))))
+          (c/render game
+                    (-> current-sprite
+                        (t/project game-width game-height)
+                        (t/translate x y)
+                        (t/scale (:width current-sprite)
+                                 (:height current-sprite))
+                        (t/crop 0 0 (:width current-sprite) (:height current-sprite)))))))))
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
@@ -61,7 +80,6 @@
   (if @*refresh?
     (try (println "calling (compile-all game)")
          (swap! *refresh? not)
-         (init game)
          (compile-all game session/session*)
          (catch #?(:clj Exception :cljs js/Error) err
            (println "compile-all error")

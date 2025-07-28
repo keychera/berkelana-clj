@@ -44,6 +44,11 @@
      [::leva-color ::r r]
      [::leva-color ::g g]
      [::leva-color ::b b]]
+    
+    ::leva-spritesheet
+    [:what
+     [::leva-spritesheet ::crop? crop?]
+     [::leva-spritesheet ::frame frame-index]]
 
     ::sprite-esse
     [:what
@@ -66,7 +71,7 @@
   (-> (->> rules
            (map #'rules-debugger-wrap-fn)
            (reduce o/add-rule (o/->session)))
-      (o/insert :ubim #::esse{:x 100 :y 100 :image-to-load "char0.png"})))
+      (o/insert :ubim #::esse{:x 150 :y 100 :image-to-load "char0.png"})))
 
 
 ;; specs
@@ -78,6 +83,9 @@
 
 (s/def ::x number?)
 (s/def ::y number?)
+
+(s/def ::crop? boolean?)
+(s/def ::frame int?)
 
 (s/def ::r (s/and number? #(<= 0 % 255)))
 (s/def ::g (s/and number? #(<= 0 % 255)))
