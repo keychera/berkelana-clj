@@ -1,8 +1,19 @@
-target/
-resources/public/js/*
-.*
-!.gitignore
+.calva
+.cpcache
+
+.lsp/*
 !.lsp/config.edn
+
+.portal
+
+.clj-kondo/*
 !.clj-kondo/config.edn
 
+.nrepl-port
+
+target/
+resources/public/js
 node_modules/
+.shadow-cljs
+
+.zzz
