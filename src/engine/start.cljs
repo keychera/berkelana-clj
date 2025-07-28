@@ -1,12 +1,43 @@
 (ns engine.start
   (:require
+   [clojure.data :as data]
+   [clojure.set :as set]
    [engine.engine :as engine]
    [engine.session :as session]
    [goog.events :as events]
    [leva.core :as leva]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as pc]
+   [reagent.core :as r]
    [reagent.dom.client :as rdomc]))
+
+(defonce !panel-atom
+  (r/atom
+   {:crop? {:value false}
+    :frame {:value 0 :step 1 :min 0 :max 47}
+    :color {:r 200 :g 120 :b 120}
+    :point {:x 0 :y 0}}))
+
+(defmulti on-leva-change (fn [k _old _new] k))
+
+(defmethod on-leva-change :crop? [_ _ new']
+ (swap! session/session* o/insert ::session/leva-spritesheet ::session/crop? new'))
+
+(defmethod on-leva-change :frame [_ _ new']
+  (swap! session/session* o/insert ::session/leva-spritesheet ::session/frame new'))
+
+(defmethod on-leva-change :color [_ _ {:keys [r g b]}]
+  (swap! session/session* o/insert ::session/leva-color {::session/r r ::session/g g ::session/b b}))
+
+(defmethod on-leva-change :point [_ _ {:keys [x y]}]
+  (swap! session/session* o/insert ::session/leva-point {::session/x x ::session/y y}))
+
+(defn panel-watcher [_ _ old' new']
+  (let [[removed added _common] (data/diff old' new')]
+    (doseq [k (set/union (set (keys removed)) (set (keys added)))]
+      (on-leva-change k (get old' k) (get new' k)))))
+
+(add-watch !panel-atom :panel-watcher #'panel-watcher)
 
 (defn msec->sec [n]
   (* 0.001 n))
@@ -32,8 +63,7 @@
                    (let [bounds (.getBoundingClientRect canvas)
                          x (- (.-clientX event) (.-left bounds))
                          y (- (.-clientY event) (.-top bounds))]
-                     (swap! session/session* o/insert ::session/mouse
-                            {::session/x x ::session/y y}))))
+                     (swap! session/session* o/insert ::session/mouse {::session/x x ::session/y y}))))
   #_(events/listen js/window "mousedown"
                    (fn [event]
                      (swap! engine/*state assoc :mouse-button (mousecode->keyword (.-button event)))))
@@ -41,22 +71,23 @@
                    (fn [event]
                      (swap! engine/*state assoc :mouse-button nil))))
 
-(defn keycode->keyword [keycode]
+(defn keycode->keyname [keycode]
   (condp = keycode
     37 :left
-    39 :right
     38 :up
+    39 :right
+    40 :down
     nil))
 
 (defn listen-for-keys []
-  #_(events/listen js/window "keydown"
-                   (fn [event]
-                     (when-let [k (keycode->keyword (.-keyCode event))]
-                       (swap! engine/*state update :pressed-keys conj k))))
-  #_(events/listen js/window "keyup"
-                   (fn [event]
-                     (when-let [k (keycode->keyword (.-keyCode event))]
-                       (swap! engine/*state update :pressed-keys disj k)))))
+  (events/listen js/window "keydown"
+                 (fn [event]
+                   (when-let [keyname (keycode->keyname (.-keyCode event))]
+                     (swap! session/session* o/insert keyname ::session/pressed-key ::session/keydown))))
+  (events/listen js/window "keyup"
+                 (fn [event]
+                   (when-let [keyname (keycode->keyname (.-keyCode event))]
+                     (swap! session/session* o/insert keyname ::session/pressed-key ::session/keyup)))))
 
 (defn resize [context]
   (let [display-width context.canvas.clientWidth
@@ -78,28 +109,12 @@
     (.observe observer canvas)))
 
 ;; leva
-(defn main-panel []
-  [leva/Controls
-   {:schema {:crop? {:value false
-                     :onChange (fn [value]
-                                 (swap! session/session* o/insert ::session/leva-spritesheet ::session/crop? value))}
-             :frame {:value 0
-                     :step 1 :min 0 :max 47
-                     :onChange (fn [value]
-                                 (swap! session/session* o/insert ::session/leva-spritesheet ::session/frame value))}
-             :color {:r 200 :g 120 :b 120
-                     :onChange (fn [{:keys [r g b]}]
-                                 (swap! session/session* o/insert ::session/leva-color
-                                        {::session/r r ::session/g g ::session/b b}))}
-             :point {:x 0 :y 0
-                     :onChange (fn [{:keys [x y]}]
-                                 (swap! session/session* o/insert ::session/leva-point
-                                        {::session/x x ::session/y y}))}}}])
+(defn main-panel [] 
+  [leva/Controls {:atom !panel-atom}])
 
 (defonce root (delay (rdomc/create-root (.getElementById js/document "app"))))
 
-(defn ^:export ^:dev/after-load run-reagent []
-  (rdomc/render @root [main-panel]))
+(defn ^:export run-reagent [] (rdomc/render @root [main-panel]))
 
 ;; start the game
 (defonce context

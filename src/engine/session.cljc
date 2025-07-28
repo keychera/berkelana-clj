@@ -39,12 +39,16 @@
      [::mouse ::x x]
      [::mouse ::y y]]
 
+    ::pressed-key
+    [:what
+     [any ::pressed-key keyname]]
+
     ::leva-color
     [:what
      [::leva-color ::r r]
      [::leva-color ::g g]
      [::leva-color ::b b]]
-    
+
     ::leva-spritesheet
     [:what
      [::leva-spritesheet ::crop? crop?]
@@ -83,6 +87,8 @@
 
 (s/def ::x number?)
 (s/def ::y number?)
+
+(s/def ::pressed-key keyword?)
 
 (s/def ::crop? boolean?)
 (s/def ::frame int?)
