@@ -1,0 +1,8 @@
+target/
+resources/public/js/*
+.*
+!.gitignore
+!.lsp/config.edn
+!.clj-kondo/config.edn
+
+node_modules/
