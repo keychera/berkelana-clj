@@ -1,11 +1,17 @@
 todo:
-    ☐ movement
+    ✔ movement @done(25-07-29 21:12)
+        ☐ helltaker's feel
+    ☐ fps counter
     ☐ text dialogue
     ☐ sound effect
     ☐ music
     ☐ variation in screen size
     ☐ instanced image
-    ☐ leva receiving data
+        ☐ background
+        ☐ tilemaps, or try out the supported tilemap related libs
+    ☐ the game...
+    ✔ leva receiving data @done(25-07-29 21:13)
     ☐ build with tools.build
     ☐ native build
     ☐ flag-like behaviour in rules engine (query-once then delete, potentially YAGNI)
+    ☐ bidirectionality (YAGNI alert)
