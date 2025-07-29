@@ -44,9 +44,9 @@
 
 (defn render-sprites-esses [game session game-width game-height]
   (let [sprite-esses (o/query-all session ::session/sprite-esse)
-        {:keys [crop? frame-index]} (first (o/query-all session ::session/leva-spritesheet))]
+        {:keys [crop?]} (first (o/query-all session ::session/leva-spritesheet))]
     (doseq [sprite-esse sprite-esses]
-      (let [{:keys [x y current-sprite]} sprite-esse]
+      (let [{:keys [x y current-sprite frame-index]} sprite-esse]
         (if crop?
           (let [spritesheet-width 384
                 frame-width 32

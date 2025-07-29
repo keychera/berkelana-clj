@@ -46,17 +46,22 @@
     ::leva-spritesheet
     [:what
      [::leva-spritesheet ::crop? crop?]
-     [::leva-spritesheet ::frame frame-index]]
+     [::leva-spritesheet ::frame leva-frame-index]
+     [esse-id ::esse/frame-index _ {:then false}]
+     :then
+     [esse-id ::esse/frame-index leva-frame-index]]
 
     ::move-player
     [:what
      [keyname ::pressed-key ::keydown]
      [esse-id ::esse/pos-x pos-x {:then false}]
      [esse-id ::esse/pos-y pos-y {:then false}]
+     [esse-id ::esse/frame-index frame-index {:then false}]
      :then
      (o/insert! esse-id
                 {::esse/pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
-                 ::esse/pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)})
+                 ::esse/pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
+                 ::esse/frame-index (case keyname :down 0 :left 12 :right 24 :up 36 0)})
      (o/retract! keyname ::pressed-key)]
 
     ::update-player-pos
@@ -77,6 +82,7 @@
      [esse-id ::esse/pos-y pos-y]
      [esse-id ::esse/x x]
      [esse-id ::esse/y y]
+     [esse-id ::esse/frame-index frame-index]
      [esse-id ::esse/current-sprite current-sprite]]
 
     ::load-image
@@ -95,7 +101,10 @@
            (map #'rules-debugger-wrap-fn)
            (reduce o/add-rule (o/->session)))
       ;; if it's inserted partially it will not hit the rule and facts will be discarded
-      (o/insert :ubim #::esse{:pos-x 4 :pos-y 4 :x 0 :y 0 :image-to-load "char0.png"})))
+      (o/insert :ubim 
+                #::esse{:pos-x 4 :pos-y 4 :x 0 :y 0 
+                        :frame-index 0
+                        :image-to-load "char0.png"})))
 
 (o/query-all @session*)
 

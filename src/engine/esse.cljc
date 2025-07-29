@@ -13,3 +13,4 @@
 (s/def ::image-to-load string?)
 (s/def ::loading-image boolean?)
 (s/def ::current-sprite (s/nilable map?))
+(s/def ::frame-index int?)
