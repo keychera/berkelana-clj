@@ -18,7 +18,7 @@
                   (f session match))
                 :then
                 (fn [f session match]
-                  (when (#{::compile-shader ::compiling-shader} (:name rule))
+                  (when (#{} (:name rule))
                     (println "firing" (:name rule)))
                   ;; (println :then (:name rule) match)
                   (f session match))
@@ -41,21 +41,40 @@
 
     ::pressed-key
     [:what
-     [any ::pressed-key keyname]]
-
-    ::leva-color
-    [:what
-     [::leva-color ::r r]
-     [::leva-color ::g g]
-     [::leva-color ::b b]]
+     [keyname ::pressed-key ::keyup]]
 
     ::leva-spritesheet
     [:what
      [::leva-spritesheet ::crop? crop?]
      [::leva-spritesheet ::frame frame-index]]
 
+    ::move-player
+    [:what
+     [keyname ::pressed-key ::keydown]
+     [esse-id ::esse/pos-x pos-x {:then false}]
+     [esse-id ::esse/pos-y pos-y {:then false}]
+     :then
+     (o/insert! esse-id
+                {::esse/pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
+                 ::esse/pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)})
+     (o/retract! keyname ::pressed-key)]
+
+    ::update-player-pos
+    [:what
+     [esse-id ::esse/pos-x pos-x]
+     [esse-id ::esse/pos-y pos-y]
+     [esse-id ::esse/x x {:then false}]
+     [esse-id ::esse/y y {:then false}]
+     :then
+     (let [grid 64]
+       (o/insert! esse-id
+                  {::esse/x (* grid pos-x)
+                   ::esse/y (* grid pos-y)}))]
+
     ::sprite-esse
     [:what
+     [esse-id ::esse/pos-x pos-x]
+     [esse-id ::esse/pos-y pos-y]
      [esse-id ::esse/x x]
      [esse-id ::esse/y y]
      [esse-id ::esse/current-sprite current-sprite]]
@@ -75,8 +94,10 @@
   (-> (->> rules
            (map #'rules-debugger-wrap-fn)
            (reduce o/add-rule (o/->session)))
-      (o/insert :ubim #::esse{:x 150 :y 100 :image-to-load "char0.png"})))
+      ;; if it's inserted partially it will not hit the rule and facts will be discarded
+      (o/insert :ubim #::esse{:pos-x 4 :pos-y 4 :x 0 :y 0 :image-to-load "char0.png"})))
 
+(o/query-all @session*)
 
 ;; specs
 (s/def ::total number?)
@@ -92,7 +113,3 @@
 
 (s/def ::crop? boolean?)
 (s/def ::frame int?)
-
-(s/def ::r (s/and number? #(<= 0 % 255)))
-(s/def ::g (s/and number? #(<= 0 % 255)))
-(s/def ::b (s/and number? #(<= 0 % 255)))

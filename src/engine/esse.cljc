@@ -4,6 +4,9 @@
 ;; esse is used to replace the word entity from entity-component-system
 ;; because play-cljc used the word entity that I am not yet sure if it can be conflated or not
 
+(s/def ::pos-x int?)
+(s/def ::pos-y int?)
+
 (s/def ::x number?)
 (s/def ::y number?)
 

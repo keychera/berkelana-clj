@@ -16,7 +16,6 @@
    {:pressed-key {:value "no key" :render (constantly false)}
     :crop?       {:value true}
     :frame       {:value 0 :step 1 :min 0 :max 47}
-    :color       {:r 200 :g 120 :b 120}
     :position    {:x 0 :y 0}}))
 
 (defmulti on-leva-change (fn [k _old _new] k))
@@ -26,9 +25,6 @@
 
 (defmethod on-leva-change :frame [_ _ new']
   (swap! session/session* o/insert ::session/leva-spritesheet ::session/frame new'))
-
-(defmethod on-leva-change :color [_ _ {:keys [r g b]}]
-  (swap! session/session* o/insert ::session/leva-color {::session/r r ::session/g g ::session/b b}))
 
 (defmethod on-leva-change :point [_ _ {:keys [x y]}]
   (swap! session/session* o/insert ::session/leva-point {::session/x x ::session/y y}))
@@ -52,8 +48,8 @@
      (fn [ts]
        (let [ts (msec->sec ts)]
          (try
-           (let [{:keys [x y]} (first (o/query-all @session/session* ::session/sprite-esse))]
-             (swap! !panel-atom assoc :position {:x x :y y}))
+           (let [{:keys [pos-x pos-y]} (first (o/query-all @session/session* ::session/sprite-esse))] 
+             (swap! !panel-atom assoc :position {:x (or pos-x 0) :y (or pos-y 0)}))
            (catch js/Error e (println e)))
          (game-loop (assoc game
                            :delta-time (- ts (:total-time game))
