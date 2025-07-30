@@ -39,15 +39,28 @@
 
 (add-watch !panel-atom :panel-watcher #'panel-watcher)
 
+(defonce !fps-counter
+  (r/atom {:last-time (js/performance.now) :frames 0 :fps 0}))
+
+(defn ^:vibe update-fps! []
+  (let [now (js/performance.now)
+        {:keys [last-time frames]} @!fps-counter
+        delta (- now last-time)]
+    (if (> delta 1000) ;; 1 second has passed
+      (swap! !fps-counter assoc :last-time now :frames 0 :fps frames)
+      (swap! !fps-counter update :frames inc))))
+
+
 (defn game-loop [game]
   (let [game (engine/tick game)]
     (js/requestAnimationFrame
      (fn [ts]
        (let [ts ts]
          (try
-           (let [{:keys [pos-x pos-y]} (first (o/query-all @session/session* ::session/sprite-esse))] 
+           (let [{:keys [pos-x pos-y]} (first (o/query-all @session/session* ::session/sprite-esse))]
              (swap! !panel-atom assoc :position {:x (or pos-x 0) :y (or pos-y 0)}))
            (catch js/Error e (println e)))
+         (update-fps!)
          (game-loop (assoc game
                            :delta-time (- ts (:total-time game))
                            :total-time ts)))))))
@@ -112,9 +125,17 @@
 
 ;; leva
 (defn main-panel []
-  [leva/Controls
-   {:atom !panel-atom
-    :schema {"last key" (leva/monitor (fn [] (:pressed-key @!panel-atom)) {})}}])
+  [:<>
+   [leva/Controls
+    {:folder {:name "FPS"}
+     :atom   !fps-counter
+     :schema {"fps graph"  (leva/monitor (fn [] (:fps @!fps-counter)) {:graph true :interval 200}) 
+              :fps {:order 1}
+              :last-time   {:render (constantly false)}}}]
+   [leva/Controls
+    {:folder {:name "State"}
+     :atom   !panel-atom
+     :schema {"last key"   (leva/monitor (fn [] (:pressed-key @!panel-atom)) {})}}]])
 
 (defonce root (delay (rdomc/create-root (.getElementById js/document "app"))))
 
