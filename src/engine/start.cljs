@@ -30,7 +30,7 @@
   (swap! session/session* o/insert ::session/leva-point {::session/x x ::session/y y}))
 
 (defmethod on-leva-change :default [k old' new']
-  (println k old' new'))
+  #_(println k old' new'))
 
 (defn panel-watcher [_ _ old' new']
   (let [[removed added _common] (data/diff old' new')]
@@ -39,14 +39,11 @@
 
 (add-watch !panel-atom :panel-watcher #'panel-watcher)
 
-(defn msec->sec [n]
-  (* 0.001 n))
-
 (defn game-loop [game]
   (let [game (engine/tick game)]
     (js/requestAnimationFrame
      (fn [ts]
-       (let [ts (msec->sec ts)]
+       (let [ts ts]
          (try
            (let [{:keys [pos-x pos-y]} (first (o/query-all @session/session* ::session/sprite-esse))] 
              (swap! !panel-atom assoc :position {:x (or pos-x 0) :y (or pos-y 0)}))
@@ -129,7 +126,7 @@
         context (.getContext canvas "webgl2")
         initial-game (assoc (pc/->game context)
                             :delta-time 0
-                            :total-time (msec->sec (js/performance.now)))]
+                            :total-time (js/performance.now))]
     (engine/init initial-game)
     (listen-for-mouse canvas)
     (listen-for-keys)

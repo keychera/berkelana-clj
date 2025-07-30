@@ -14,13 +14,13 @@
                   (f session new-fact old-fact))
                 :when
                 (fn [f session match]
-                  ;; (println :when (:name rule) match)
+                  (when (#{} (:name rule))
+                    (println "when" (:name rule)))
                   (f session match))
                 :then
                 (fn [f session match]
-                  (when (#{} (:name rule))
+                  (when (#{::leva-spritesheet ::move-player ::move-delay} (:name rule))
                     (println "firing" (:name rule)))
-                  ;; (println :then (:name rule) match)
                   (f session match))
                 :then-finally
                 (fn [f session]
@@ -54,15 +54,26 @@
     ::move-player
     [:what
      [keyname ::pressed-key ::keydown]
+     [::time ::delta delta-time]
      [esse-id ::esse/pos-x pos-x {:then false}]
      [esse-id ::esse/pos-y pos-y {:then false}]
      [esse-id ::esse/frame-index frame-index {:then false}]
+     [esse-id ::esse/move-delay move-delay {:then false}]
+     :when (<= move-delay 0)
      :then
      (o/insert! esse-id
                 {::esse/pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
                  ::esse/pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
-                 ::esse/frame-index (case keyname :down 0 :left 12 :right 24 :up 36 0)})
-     (o/retract! keyname ::pressed-key)]
+                 ::esse/frame-index (case keyname :down 0 :left 12 :right 24 :up 36 0)
+                 ::esse/move-delay 100})]
+
+    ::move-delay
+    [:what
+     [::time ::delta delta-time]
+     [esse-id ::esse/move-delay move-delay {:then false}]
+     :when (> move-delay 0)
+     :then
+     (o/insert! esse-id {::esse/move-delay (- move-delay delta-time)})]
 
     ::update-player-pos
     [:what
@@ -101,8 +112,8 @@
            (map #'rules-debugger-wrap-fn)
            (reduce o/add-rule (o/->session)))
       ;; if it's inserted partially it will not hit the rule and facts will be discarded
-      (o/insert :ubim 
-                #::esse{:pos-x 4 :pos-y 4 :x 0 :y 0 
+      (o/insert :ubim
+                #::esse{:pos-x 4 :pos-y 4 :x 0 :y 0 :move-delay 0
                         :frame-index 0
                         :image-to-load "char0.png"})))
 
@@ -122,3 +133,18 @@
 
 (s/def ::crop? boolean?)
 (s/def ::frame int?)
+
+
+(comment
+
+  (-> (->> (o/ruleset
+            {::move-player
+             [:what
+              [keyname ::pressed-key ::keydown]
+              :then
+              (println "pressed!" keyname)]})
+           (reduce o/add-rule (o/->session)))
+      (o/insert "thiskey" ::pressed-key ::keydown)
+      (o/fire-rules)
+      (o/fire-rules)
+      (o/query-all)))

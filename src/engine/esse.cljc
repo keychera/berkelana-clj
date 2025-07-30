@@ -10,6 +10,8 @@
 (s/def ::x number?)
 (s/def ::y number?)
 
+(s/def ::move-delay number?)
+
 (s/def ::image-to-load string?)
 (s/def ::loading-image boolean?)
 (s/def ::current-sprite (s/nilable map?))
