@@ -34,12 +34,13 @@
   (gl game enable (gl game BLEND))
   (gl game blendFunc (gl game ONE) (gl game ONE_MINUS_SRC_ALPHA))
   (let [[game-width game-height] (utils/get-size game)]
-    (reset! session/session*
-            (-> session/initial-session
-                (o/insert ::session/window
-                          {::session/width game-width
-                           ::session/height game-height})
-                (o/fire-rules)))
+    (swap! session/session*
+           (fn [session]
+             (-> (session/init-session session)
+                 (o/insert ::session/window
+                           {::session/width game-width
+                            ::session/height game-height})
+                 (o/fire-rules))))
     (compile-all game session/session*)))
 
 (defn render-sprites-esses [game session game-width game-height]
@@ -79,7 +80,7 @@
   (if @*refresh?
     (try (println "calling (compile-all game)")
          (swap! *refresh? not)
-         (compile-all game session/session*)
+         (init game)
          (catch #?(:clj Exception :cljs js/Error) err
            (println "compile-all error")
            #?(:clj  (println err)

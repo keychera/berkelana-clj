@@ -4,7 +4,7 @@
    [engine.esse :as esse]
    [odoyle.rules :as o]))
 
-(defonce session* (atom {}))
+(defonce session* (atom nil))
 
 (defn rules-debugger-wrap-fn [rule]
   (o/wrap-rule rule
@@ -49,7 +49,7 @@
      [::leva-spritesheet ::frame leva-frame-index]
      [esse-id ::esse/frame-index _ {:then false}]
      :then
-     [esse-id ::esse/frame-index leva-frame-index]]
+     (o/insert! esse-id ::esse/frame-index leva-frame-index)]
 
     ::move-player
     [:what
@@ -64,13 +64,13 @@
      (o/insert! esse-id
                 {::esse/pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
                  ::esse/pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
-                 ::esse/frame-index (case keyname :down 0 :left 12 :right 24 :up 36 0)
+                 ::esse/frame-index (case keyname :down 1 :left 13 :right 25 :up 37 1)
                  ::esse/move-delay 100})]
 
     ::move-delay
     [:what
      [::time ::delta delta-time]
-     [esse-id ::esse/move-delay move-delay {:then false}]
+     [esse-id ::esse/move-delay move-delay {:then false}] 
      :when (> move-delay 0)
      :then
      (o/insert! esse-id {::esse/move-delay (- move-delay delta-time)})]
@@ -107,17 +107,23 @@
      :then
      (o/retract! esse-id ::esse/image-to-load)]}))
 
-(def initial-session
-  (-> (->> rules
-           (map #'rules-debugger-wrap-fn)
-           (reduce o/add-rule (o/->session)))
-      ;; if it's inserted partially it will not hit the rule and facts will be discarded
-      (o/insert :ubim
-                #::esse{:pos-x 4 :pos-y 4 :x 0 :y 0 :move-delay 0
-                        :frame-index 0
-                        :image-to-load "char0.png"})))
+(defonce ^:devonly previous-rules (atom nil))
 
-(o/query-all @session*)
+(defn init-session [session]
+  (let [session (if (some? session)
+                  (->> @previous-rules ;; devonly : refresh rules without resetting facts
+                       (map :name)
+                       (reduce o/remove-rule session))
+                  (o/->session))]
+    (reset! previous-rules rules)
+    (-> (->> rules
+             (map #'rules-debugger-wrap-fn)
+             (reduce o/add-rule session))
+        ;; if it's inserted partially it will not hit the rule and facts will be discarded
+        (o/insert ::leva-spritesheet ::crop? true)
+        (o/insert :ubim
+                  #::esse{:pos-x 4 :pos-y 4 :x 0 :y 0 :move-delay 0
+                          :frame-index 0 :image-to-load "char0.png"}))))
 
 ;; specs
 (s/def ::total number?)
@@ -135,7 +141,7 @@
 (s/def ::frame int?)
 
 
-(comment
+(comment 
 
   (-> (->> (o/ruleset
             {::move-player
