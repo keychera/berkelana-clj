@@ -19,7 +19,7 @@
                   (f session match))
                 :then
                 (fn [f session match]
-                  (when (#{::leva-spritesheet ::move-player ::move-delay} (:name rule))
+                  (when (#{::move-animation} (:name rule))
                     (println "firing" (:name rule)))
                   (f session match))
                 :then-finally
@@ -53,27 +53,44 @@
 
     ::move-player
     [:what
-     [keyname ::pressed-key ::keydown]
      [::time ::delta delta-time]
+     [keyname ::pressed-key ::keydown]
      [esse-id ::esse/pos-x pos-x {:then false}]
      [esse-id ::esse/pos-y pos-y {:then false}]
      [esse-id ::esse/frame-index frame-index {:then false}]
      [esse-id ::esse/move-delay move-delay {:then false}]
-     :when (<= move-delay 0)
+     :when
+     (<= move-delay 0)
+     (#{:left :right :up :down} keyname)
      :then
      (o/insert! esse-id
                 {::esse/pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
                  ::esse/pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
-                 ::esse/frame-index (case keyname :down 1 :left 13 :right 25 :up 37 1)
-                 ::esse/move-delay 100})]
+                 ::esse/move-delay 50})]
 
     ::move-delay
     [:what
      [::time ::delta delta-time]
-     [esse-id ::esse/move-delay move-delay {:then false}] 
+     [esse-id ::esse/move-delay move-delay {:then false}]
      :when (> move-delay 0)
      :then
      (o/insert! esse-id {::esse/move-delay (- move-delay delta-time)})]
+
+    ::move-animation
+    [:what
+     [::time ::delta delta-time]
+     [keyname ::pressed-key ::keydown]
+     [esse-id ::esse/anim-tick anim-tick {:then false}]
+     [esse-id ::esse/anim-elapsed-ms anim-elapsed-ms {:then false}]
+     [esse-id ::esse/frame-index frame-index {:then false}]
+     :when
+     (#{:left :right :up :down} keyname)
+     :then
+     (if (> anim-elapsed-ms 100) ;; need to think more about the 'mutable' and the constant
+       (o/insert! esse-id {::esse/anim-tick (inc anim-tick) ::esse/anim-elapsed-ms 0})
+       (o/insert! esse-id {::esse/anim-elapsed-ms (+ anim-elapsed-ms delta-time)}))
+     (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
+       (o/insert! esse-id {::esse/frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)}))]
 
     ::update-player-pos
     [:what
@@ -122,7 +139,7 @@
         ;; if it's inserted partially it will not hit the rule and facts will be discarded
         (o/insert ::leva-spritesheet ::crop? true)
         (o/insert :ubim
-                  #::esse{:pos-x 4 :pos-y 4 :x 0 :y 0 :move-delay 0
+                  #::esse{:pos-x 4 :pos-y 4 :x 0 :y 0 :move-delay 0 :anim-tick 0 :anim-elapsed-ms 0
                           :frame-index 0 :image-to-load "char0.png"}))))
 
 ;; specs
@@ -141,8 +158,7 @@
 (s/def ::frame int?)
 
 
-(comment 
-
+(comment
   (-> (->> (o/ruleset
             {::move-player
              [:what

@@ -11,6 +11,8 @@
 (s/def ::y number?)
 
 (s/def ::move-delay number?)
+(s/def ::anim-tick number?)
+(s/def ::anim-elapsed-ms number?)
 
 (s/def ::image-to-load string?)
 (s/def ::loading-image boolean?)
