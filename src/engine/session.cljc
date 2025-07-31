@@ -19,7 +19,7 @@
                   (f session match))
                 :then
                 (fn [f session match]
-                  (when (#{::move-animation} (:name rule))
+                  (when (#{::animate-pos} (:name rule))
                     (println "firing" (:name rule)))
                   (f session match))
                 :then-finally
@@ -59,14 +59,17 @@
      [esse-id ::esse/pos-y pos-y {:then false}]
      [esse-id ::esse/frame-index frame-index {:then false}]
      [esse-id ::esse/move-delay move-delay {:then false}]
+     [esse-id ::esse/move-duration move-duration {:then false}]
      :when
      (<= move-delay 0)
      (#{:left :right :up :down} keyname)
      :then
      (o/insert! esse-id
-                {::esse/pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
+                {::esse/prev-x pos-x
+                 ::esse/prev-y pos-y
+                 ::esse/pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
                  ::esse/pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
-                 ::esse/move-delay 50})]
+                 ::esse/move-delay move-duration})]
 
     ::move-delay
     [:what
@@ -92,17 +95,22 @@
      (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
        (o/insert! esse-id {::esse/frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)}))]
 
-    ::update-player-pos
+    ::animate-pos
     [:what
-     [esse-id ::esse/pos-x pos-x]
-     [esse-id ::esse/pos-y pos-y]
-     [esse-id ::esse/x x {:then false}]
-     [esse-id ::esse/y y {:then false}]
+     [esse-id ::esse/pos-x px]
+     [esse-id ::esse/pos-y py]
+     [esse-id ::esse/prev-x sx]
+     [esse-id ::esse/prev-y sy]
+     [esse-id ::esse/move-delay move-delay]
+     [esse-id ::esse/move-duration move-duration {:then false}]
      :then
-     (let [grid 64]
+     (let [t (- 1.0 (/ move-delay move-duration))
+           ease-fn #(Math/pow % 2) grid 64
+           x (+ sx (* (- px sx) (ease-fn t)))
+           y (+ sy (* (- py sy) (ease-fn t)))]
        (o/insert! esse-id
-                  {::esse/x (* grid pos-x)
-                   ::esse/y (* grid pos-y)}))]
+                  {::esse/x (* grid x)
+                   ::esse/y (* grid y)}))]
 
     ::sprite-esse
     [:what
@@ -139,8 +147,10 @@
         ;; if it's inserted partially it will not hit the rule and facts will be discarded
         (o/insert ::leva-spritesheet ::crop? true)
         (o/insert :ubim
-                  #::esse{:pos-x 4 :pos-y 4 :x 0 :y 0 :move-delay 0 :anim-tick 0 :anim-elapsed-ms 0
-                          :frame-index 0 :image-to-load "char0.png"}))))
+                  #::esse{:image-to-load "char0.png" :move-duration 100
+                          #_mutable
+                          :prev-x 4 :prev-y 4 :pos-x 4 :pos-y 4 :x 0 :y 0
+                          :frame-index 0 :move-delay 0 :anim-tick 0 :anim-elapsed-ms 0}))))
 
 ;; specs
 (s/def ::total number?)
