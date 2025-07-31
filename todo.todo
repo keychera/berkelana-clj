@@ -1,7 +1,12 @@
 todo:
     ✔ movement @done(25-07-29 21:12)
-        ☐ helltaker's feel
-    ☐ fps counter
+        ✔ helltaker's feel @done(25-08-01 00:55) kinda feel nice now
+        ☐ easing
+        ☐ particle
+    ✔ fps counter @done(25-08-01 00:55)
+        ☐ why is it 165 fps? try to understand it more and maybe about fps limiting as well
+    ☐ the mutable and the constant, the refreshable and the initialization
+    ☐ multiple entities with shared behaviour
     ☐ text dialogue
     ☐ sound effect
     ☐ music
