@@ -15,6 +15,8 @@ todo:
     ☐ instanced image
         ☐ background
         ☐ tilemaps, or try out the supported tilemap related libs
+            ☐ we tried tiled and have made one but seems using tilesoup is a grand task, defer for now
+            ☐ also what's with that macro for slurp hack?
     ☐ the game...
     ✔ leva receiving data @done(25-07-29 21:13)
     ☐ build with tools.build

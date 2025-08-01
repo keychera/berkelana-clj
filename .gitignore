@@ -13,6 +13,7 @@
 
 target/
 resources/public/js
+resources/public/berkelana-tiled
 node_modules/
 .shadow-cljs
 
