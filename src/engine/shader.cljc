@@ -4,7 +4,6 @@
       :cljs [play-cljc.macros-js :refer-macros [gl]])
    [clojure.spec.alpha :as s]
    [engine.esse :as esse]
-   [engine.utils :as utils]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as entities-2d]
@@ -32,20 +31,18 @@
    :outputs   '{o_color vec4}
    :signatures '{main ([] void)}
    :functions
-   '{main ([] (= o_color (vec4 "1.0" "0.0" "0.0" "0.5")))}})
+   '{main ([] (= o_color (vec4 "1.0" "0.0" "0.0" "1.0")))}})
 
-(defn make-circle [polygon]
+(defn make-circle [num-of-polygon]
   (let [two-pi (* 2 Math/PI)
-        angle-shift (/ two-pi (* polygon 2))]
-    (->> (take (* polygon 2) (iterate inc 0))
+        angle-shift (/ two-pi num-of-polygon)]
+    (->> (take num-of-polygon (iterate inc 0))
          (map (fn [i] [(float (+ (/ (Math/cos (* i angle-shift)) 2) 1))
                        (float (+ (/ (Math/sin (* i angle-shift)) 2) 1))
                        (float (+ (/ (Math/cos (* (inc i) angle-shift)) 2) 1))
                        (float (+ (/ (Math/sin (* (inc i) angle-shift)) 2) 1))
-                       1.0
-                       1.0]))
-         flatten
-         (into []))))
+                       1.0 1.0]))
+         flatten (into []))))
 
 (defn ->hati [game]
   (-> {:vertex     vertex-shader
@@ -98,6 +95,6 @@
       (let [{:keys [x y compiled-shader]} esse]
         (c/render game
                   (-> compiled-shader
-                      (t/project 240 240)
-                      (t/scale 16 16)
-                      (t/translate 0 0)))))))
+                      (t/project game-width game-height)
+                      (t/translate x y)
+                      (t/scale 64 64)))))))

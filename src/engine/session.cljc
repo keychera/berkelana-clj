@@ -84,7 +84,7 @@
     ::move-animation
     [:what
      [::time ::delta delta-time]
-     [keyname ::pressed-key ::keydown]
+     [keyname ::pressed-key keystate]
      [:ubim ::esse/anim-tick anim-tick {:then false}]
      [esse-id ::esse/anim-elapsed-ms anim-elapsed-ms {:then false}]
      [esse-id ::esse/frame-index frame-index {:then false}]
@@ -94,8 +94,19 @@
      (if (> anim-elapsed-ms 100) ;; need to think more about the 'mutable' and the constant
        (o/insert! esse-id {::esse/anim-tick (inc anim-tick) ::esse/anim-elapsed-ms 0})
        (o/insert! esse-id {::esse/anim-elapsed-ms (+ anim-elapsed-ms delta-time)}))
-     (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
-       (o/insert! esse-id {::esse/frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)}))]
+     (case keystate
+       ::keydown
+       (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
+         (o/insert! esse-id {::esse/frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)}))
+       ::keyup
+       (o/insert! esse-id {::esse/anim-elapsed-ms 0
+                           ::esse/frame-index (case keyname :down 1 :left 13 :right 25 :up 37 1)}))]
+
+    ::one-frame-keyup
+    [:what
+     [keyname ::pressed-key ::keyup]
+     :then
+     (o/retract! keyname ::pressed-key)]
 
     ::animate-pos
     [:what
@@ -161,7 +172,7 @@
         (o/insert :asset/char0 ::asset-image-to-load "char0.png")
         ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
         (o/insert :john
-                  #::esse{::shader/shader-to-load shader/->hati :move-duration 100 :move-delay 0 
+                  #::esse{::shader/shader-to-load shader/->hati :move-duration 100 :move-delay 0
                           :prev-x 4 :prev-y 4 :pos-x 4 :pos-y 4 :x 0 :y 0 :frame-index 0})
         (o/insert :ubim
                   #::esse{:sprite-from-asset :asset/char0 :move-duration 100

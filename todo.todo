@@ -4,10 +4,15 @@ todo:
         ✔ easing @done(25-08-01 02:05)
         ☐ particle
     ✔ fps counter @done(25-08-01 00:55)
-        ☐ why is it 165 fps? try to understand it more and maybe about fps limiting as well
+        ✔ why is it 165 fps? try to understand it more @done(25-08-02 23:08) it's monitor refresh rate!
+        ☐ fps limiting
     ☐ the mutable and the constant, the refreshable and the initialization
     ☐ naming fatigue!!
-    ☐ multiple entities with shared behaviour
+    ✔ multiple entities with shared behaviour @done(25-08-02 22:54) I think this can be done already, just design boundary problem
+    ✔ somehow we learned vertex shaders @done(25-08-02 22:55)
+        ☐ transform
+        ☐ bounce
+        ☐ vertex animation
     ☐ text dialogue
     ☐ sound effect
     ☐ music
@@ -22,4 +27,4 @@ todo:
     ☐ build with tools.build
     ☐ native build
     ☐ flag-like behaviour in rules engine (query-once then delete, potentially YAGNI)
-    ☐ bidirectionality (YAGNI alert)
+    ✘ bidirectionality (YAGNI alert) @cancelled(25-08-02 23:10) I forgot what this is, leva is already bidirectional
