@@ -5,6 +5,7 @@
    [engine.refresh :refer [*refresh?]]
    [engine.session :as session]
    [engine.shader :as shader]
+   [engine.time :as time]
    [engine.utils :as utils]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
@@ -75,7 +76,7 @@
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
-   :clear {:color [(/ 0 255) (/ 0 255) (/ 0 255) 0.0] :depth 1}})
+   :clear {:color [(/ 0 255) (/ 0 255) (/ 0 255) 1.0] :depth 1}})
 
 (defn tick [game]
   (if @*refresh?
@@ -90,7 +91,7 @@
       (let [{:keys [delta-time total-time]} game
             session (swap! session/session*
                            #(-> %
-                                (o/insert ::session/time {::session/total total-time ::session/delta delta-time})
+                                (time/insert total-time delta-time)
                                 o/fire-rules))
             {game-width :width game-height :height} (first (o/query-all session ::session/window))]
         (when (and (pos? game-width) (pos? game-height))

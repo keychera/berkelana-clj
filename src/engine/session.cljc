@@ -2,8 +2,9 @@
   (:require
    [clojure.spec.alpha :as s]
    [engine.esse :as esse]
-   [odoyle.rules :as o]
-   [engine.shader :as shader]))
+   [engine.shader :as shader]
+   [engine.time :as time]
+   [odoyle.rules :as o]))
 
 (defonce session* (atom nil))
 
@@ -55,7 +56,7 @@
 
     ::move-player
     [:what
-     [::time ::delta delta-time]
+     [::time/now ::time/delta delta-time]
      [keyname ::pressed-key ::keydown]
      [:ubim ::esse/pos-x pos-x {:then false}]
      [esse-id ::esse/pos-y pos-y {:then false}]
@@ -75,7 +76,7 @@
 
     ::move-delay
     [:what
-     [::time ::delta delta-time]
+     [::time/now ::time/delta delta-time]
      [:ubim ::esse/move-delay move-delay {:then false}]
      :when (> move-delay 0)
      :then
@@ -83,7 +84,7 @@
 
     ::move-animation
     [:what
-     [::time ::delta delta-time]
+     [::time/now ::time/delta delta-time]
      [keyname ::pressed-key keystate]
      [:ubim ::esse/anim-tick anim-tick {:then false}]
      [esse-id ::esse/anim-elapsed-ms anim-elapsed-ms {:then false}]
@@ -181,9 +182,6 @@
                           :frame-index 0 :move-delay 0 :anim-tick 0 :anim-elapsed-ms 0}))))
 
 ;; specs
-(s/def ::total number?)
-(s/def ::delta number?)
-
 (s/def ::width number?)
 (s/def ::height number?)
 
