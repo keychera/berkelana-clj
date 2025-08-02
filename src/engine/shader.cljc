@@ -34,8 +34,12 @@
    :signatures '{main ([] void)}
    :functions
    '{main ([]
-           (=vec2 st (/ gl_FragCoord.xy u_resolution.xy))
-           (= o_color (vec4 st.x st.y "1.0" "0.4")))}})
+           (=vec2 ndc (- (* (/ gl_FragCoord.xy u_resolution.xy) "2.0") "1.0"))
+           (=float dist (distance ndc (vec2 0)))
+           (=float alpha "0.0")
+           ("if" (< dist u_radius) (= alpha "1.0") )
+           ("else" (= alpha "0.0"))
+           (= o_color (vec4 "1.0" "0.0" "0.0" alpha)))}})
 
 (defn ->hati [game]
   (let [[game-width game-height] (utils/get-size game)]
@@ -47,7 +51,7 @@
          :uniforms   {'u_matrix     (m/identity-matrix 3)
                       'u_resolution [game-width game-height]
                       'u_root       [0.0 0.0]
-                      'u_radius     1.0}}
+                      'u_radius     0.5}}
         (entities-2d/map->TwoDEntity))))
 
 (def rules
@@ -90,5 +94,5 @@
         (c/render game
                   (-> compiled-shader
                       (t/project game-width game-height)
-                      (t/translate (+ x 32) (+ y 32))
-                      (t/scale 64 64)))))))
+                      (t/translate 0 0)
+                      (t/scale game-width game-height)))))))

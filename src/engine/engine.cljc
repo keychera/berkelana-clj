@@ -75,7 +75,7 @@
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
-   :clear {:color [(/ 0 255) (/ 0 255) (/ 0 255) 1] :depth 1}})
+   :clear {:color [(/ 0 255) (/ 0 255) (/ 0 255) 0.0] :depth 1}})
 
 (defn tick [game]
   (if @*refresh?
