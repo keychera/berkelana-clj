@@ -29,7 +29,7 @@
 (defmethod on-leva-change :point [_ _ {:keys [x y]}]
   (swap! session/session* o/insert ::session/leva-point {::session/x x ::session/y y}))
 
-(defmethod on-leva-change :default [k old' new']
+(defmethod on-leva-change :default [_k _old' _new']
   #_(println k old' new'))
 
 (defn panel-watcher [_ _ old' new']
