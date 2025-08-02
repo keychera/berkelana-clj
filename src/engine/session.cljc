@@ -10,7 +10,8 @@
   (o/wrap-rule rule
                {:what
                 (fn [f session new-fact old-fact]
-                  ;; (println :what (:name rule) new-fact old-fact)
+                  (when (#{} (:name rule))
+                    (println (:name rule) "is comparing" old-fact "=>" new-fact ))
                   (f session new-fact old-fact))
                 :when
                 (fn [f session match]
@@ -19,7 +20,7 @@
                   (f session match))
                 :then
                 (fn [f session match]
-                  (when (#{::animate-pos} (:name rule))
+                  (when (#{::sprite-ready} (:name rule))
                     (println "firing" (:name rule)))
                   (f session match))
                 :then-finally
@@ -121,16 +122,28 @@
      [esse-id ::esse/frame-index frame-index]
      [esse-id ::esse/current-sprite current-sprite]]
 
+    ::sprite-ready
+    [:what
+     [esse-id ::esse/sprite-from-asset asset-id]
+     [asset-id ::image-asset image]
+     :then
+     (o/retract! esse-id ::esse/sprite-from-asset)
+     (o/insert! esse-id ::esse/current-sprite image)]
+
     ::load-image
     [:what
-     [esse-id ::esse/image-to-load image-path]]
+     [asset-id ::asset-image-to-load image-path]]
 
     ::loading-image
     [:what
-     [esse-id ::esse/image-to-load image-path]
-     [esse-id ::esse/loading-image true]
+     [asset-id ::asset-image-to-load image-path]
+     [asset-id ::image-loading? true]
      :then
-     (o/retract! esse-id ::esse/image-to-load)]}))
+     (o/retract! asset-id ::asset-image-to-load)]
+
+    ::image-asset
+    [:what
+     [asset-id ::image-asset image]]}))
 
 (defonce ^:devonly previous-rules (atom nil))
 
@@ -143,11 +156,12 @@
     (reset! previous-rules rules)
     (-> (->> rules
              (map #'rules-debugger-wrap-fn)
-             (reduce o/add-rule session))
-        ;; if it's inserted partially it will not hit the rule and facts will be discarded
+             (reduce o/add-rule session)) 
         (o/insert ::leva-spritesheet ::crop? true)
+        (o/insert :asset/char0 ::asset-image-to-load "char0.png")
+        ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
         (o/insert :ubim
-                  #::esse{:image-to-load "char0.png" :move-duration 100
+                  #::esse{:sprite-from-asset :asset/char0 :move-duration 100
                           #_mutable
                           :prev-x 4 :prev-y 4 :pos-x 4 :pos-y 4 :x 0 :y 0
                           :frame-index 0 :move-delay 0 :anim-tick 0 :anim-elapsed-ms 0}))))
@@ -167,6 +181,9 @@
 (s/def ::crop? boolean?)
 (s/def ::frame int?)
 
+(s/def ::asset-image-to-load string?)
+(s/def ::image-loading? boolean?)
+(s/def ::image-asset (s/nilable map?))
 
 (comment
   (-> (->> (o/ruleset

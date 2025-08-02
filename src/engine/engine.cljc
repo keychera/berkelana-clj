@@ -2,7 +2,6 @@
   (:require
    #?(:clj  [play-cljc.macros-java :refer [gl]]
       :cljs [play-cljc.macros-js :refer-macros [gl]])
-   [engine.esse :as esse]
    [engine.refresh :refer [*refresh?]]
    [engine.session :as session]
    [engine.utils :as utils]
@@ -11,10 +10,10 @@
    [play-cljc.gl.entities-2d :as entities-2d]
    [play-cljc.transforms :as t]))
 
-(defn load-image [game session*]
-  (doseq [{:keys [esse-id image-path]} (o/query-all @session* ::session/load-image)]
-    (swap! session* #(o/insert % esse-id ::esse/loading-image true))
-    (println "loading image" esse-id image-path)
+(defn load-image-asset [game session*]
+  (doseq [{:keys [asset-id image-path]} (o/query-all @session* ::session/load-image)]
+    (swap! session* #(o/insert % asset-id ::session/image-loading? true))
+    (println "loading image asset" asset-id image-path)
     (utils/get-image
      image-path
      (fn [{:keys [data width height]}]
@@ -23,12 +22,12 @@
              loaded-image (assoc image-entity :width width :height height)]
          (swap! session*
                 #(-> %
-                     (o/retract esse-id ::esse/loading-image)
-                     (o/insert esse-id ::esse/current-sprite loaded-image)
+                     (o/retract asset-id ::session/image-loading?)
+                     (o/insert asset-id ::session/image-asset loaded-image)
                      (o/fire-rules))))))))
 
 (defn compile-all [game session*]
-  (load-image game session*))
+  (load-image-asset game session*))
 
 (defn init [game]
   (gl game enable (gl game BLEND))

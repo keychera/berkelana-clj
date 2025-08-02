@@ -17,7 +17,6 @@
 (s/def ::anim-tick number?)
 (s/def ::anim-elapsed-ms number?)
 
-(s/def ::image-to-load string?)
-(s/def ::loading-image boolean?)
+(s/def ::sprite-from-asset any?)
 (s/def ::current-sprite (s/nilable map?))
 (s/def ::frame-index int?)
