@@ -11,7 +11,7 @@
                {:what
                 (fn [f session new-fact old-fact]
                   (when (#{} (:name rule))
-                    (println (:name rule) "is comparing" old-fact "=>" new-fact ))
+                    (println (:name rule) "is comparing" old-fact "=>" new-fact))
                   (f session new-fact old-fact))
                 :when
                 (fn [f session match]
@@ -56,7 +56,7 @@
     [:what
      [::time ::delta delta-time]
      [keyname ::pressed-key ::keydown]
-     [esse-id ::esse/pos-x pos-x {:then false}]
+     [:ubim ::esse/pos-x pos-x {:then false}]
      [esse-id ::esse/pos-y pos-y {:then false}]
      [esse-id ::esse/frame-index frame-index {:then false}]
      [esse-id ::esse/move-delay move-delay {:then false}]
@@ -75,16 +75,16 @@
     ::move-delay
     [:what
      [::time ::delta delta-time]
-     [esse-id ::esse/move-delay move-delay {:then false}]
+     [:ubim ::esse/move-delay move-delay {:then false}]
      :when (> move-delay 0)
      :then
-     (o/insert! esse-id {::esse/move-delay (- move-delay delta-time)})]
+     (o/insert! :ubim {::esse/move-delay (- move-delay delta-time)})]
 
     ::move-animation
     [:what
      [::time ::delta delta-time]
      [keyname ::pressed-key ::keydown]
-     [esse-id ::esse/anim-tick anim-tick {:then false}]
+     [:ubim ::esse/anim-tick anim-tick {:then false}]
      [esse-id ::esse/anim-elapsed-ms anim-elapsed-ms {:then false}]
      [esse-id ::esse/frame-index frame-index {:then false}]
      :when
@@ -98,7 +98,7 @@
 
     ::animate-pos
     [:what
-     [esse-id ::esse/pos-x px]
+     [:ubim ::esse/pos-x px]
      [esse-id ::esse/pos-y py]
      [esse-id ::esse/prev-x sx]
      [esse-id ::esse/prev-y sy]
@@ -115,8 +115,6 @@
 
     ::sprite-esse
     [:what
-     [esse-id ::esse/pos-x pos-x]
-     [esse-id ::esse/pos-y pos-y]
      [esse-id ::esse/x x]
      [esse-id ::esse/y y]
      [esse-id ::esse/frame-index frame-index]
@@ -156,10 +154,13 @@
     (reset! previous-rules rules)
     (-> (->> rules
              (map #'rules-debugger-wrap-fn)
-             (reduce o/add-rule session)) 
+             (reduce o/add-rule session))
         (o/insert ::leva-spritesheet ::crop? true)
         (o/insert :asset/char0 ::asset-image-to-load "char0.png")
         ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
+        (o/insert :john
+                  #::esse{:sprite-from-asset :asset/char0 :move-duration 100 :move-delay 0 
+                          :prev-x 4 :prev-y 4 :pos-x 4 :pos-y 4 :x 0 :y 0 :frame-index 0})
         (o/insert :ubim
                   #::esse{:sprite-from-asset :asset/char0 :move-duration 100
                           #_mutable
