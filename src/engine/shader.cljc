@@ -9,7 +9,6 @@
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as entities-2d]
    [play-cljc.math :as m]
-   [play-cljc.primitives-2d :as primitives-2d]
    [play-cljc.transforms :as t]))
 
 (def vertex-shader
@@ -33,26 +32,32 @@
    :outputs   '{o_color vec4}
    :signatures '{main ([] void)}
    :functions
-   '{main ([]
-           (=vec2 ndc (- (* (/ gl_FragCoord.xy u_resolution.xy) "2.0") "1.0"))
-           (=float dist (distance ndc (vec2 0)))
-           (=float alpha "0.0")
-           ("if" (< dist u_radius) (= alpha "1.0") )
-           ("else" (= alpha "0.0"))
-           (= o_color (vec4 "1.0" "0.0" "0.0" alpha)))}})
+   '{main ([] (= o_color (vec4 "1.0" "0.0" "0.0" "0.5")))}})
+
+(defn make-circle [polygon]
+  (let [two-pi (* 2 Math/PI)
+        angle-shift (/ two-pi (* polygon 2))]
+    (->> (take (* polygon 2) (iterate inc 0))
+         (map (fn [i] [(float (+ (/ (Math/cos (* i angle-shift)) 2) 1))
+                       (float (+ (/ (Math/sin (* i angle-shift)) 2) 1))
+                       (float (+ (/ (Math/cos (* (inc i) angle-shift)) 2) 1))
+                       (float (+ (/ (Math/sin (* (inc i) angle-shift)) 2) 1))
+                       1.0
+                       1.0]))
+         flatten
+         (into []))))
 
 (defn ->hati [game]
-  (let [[game-width game-height] (utils/get-size game)]
-    (-> {:vertex     vertex-shader
-         :fragment   fragment-shader
-         :attributes {'a_position {:data primitives-2d/rect
-                                   :type (gl game FLOAT)
-                                   :size 2}}
-         :uniforms   {'u_matrix     (m/identity-matrix 3)
-                      'u_resolution [game-width game-height]
-                      'u_root       [0.0 0.0]
-                      'u_radius     0.5}}
-        (entities-2d/map->TwoDEntity))))
+  (-> {:vertex     vertex-shader
+       :fragment   fragment-shader
+       :attributes {'a_position {:data (make-circle 16)
+                                 :type (gl game FLOAT)
+                                 :size 2}}
+       :uniforms   {'u_matrix     (m/identity-matrix 3)
+                    'u_resolution [64 64]
+                    'u_root       [0.0 0.0]
+                    'u_radius     0.5}}
+      (entities-2d/map->TwoDEntity)))
 
 (def rules
   (o/ruleset
@@ -93,6 +98,6 @@
       (let [{:keys [x y compiled-shader]} esse]
         (c/render game
                   (-> compiled-shader
-                      (t/project game-width game-height)
-                      (t/translate 0 0)
-                      (t/scale game-width game-height)))))))
+                      (t/project 240 240)
+                      (t/scale 16 16)
+                      (t/translate 0 0)))))))
