@@ -33,7 +33,7 @@
 
 (defn init [game]
   (gl game enable (gl game BLEND))
-  (gl game blendFunc (gl game ONE) (gl game ONE_MINUS_SRC_ALPHA))
+  (gl game blendFunc (gl game SRC_ALPHA) (gl game ONE_MINUS_SRC_ALPHA))
   (let [[game-width game-height] (utils/get-size game)]
     (swap! session/session*
            (fn [session]
