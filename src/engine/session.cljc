@@ -2,7 +2,8 @@
   (:require
    [clojure.spec.alpha :as s]
    [engine.esse :as esse]
-   [odoyle.rules :as o]))
+   [odoyle.rules :as o]
+   [engine.shader :as shader]))
 
 (defonce session* (atom nil))
 
@@ -146,20 +147,21 @@
 (defonce ^:devonly previous-rules (atom nil))
 
 (defn init-session [session]
-  (let [session (if (some? session)
+  (let [all-rules (concat rules shader/rules)
+        session (if (some? session)
                   (->> @previous-rules ;; devonly : refresh rules without resetting facts
                        (map :name)
                        (reduce o/remove-rule session))
                   (o/->session))]
-    (reset! previous-rules rules)
-    (-> (->> rules
+    (reset! previous-rules all-rules)
+    (-> (->> all-rules
              (map #'rules-debugger-wrap-fn)
              (reduce o/add-rule session))
         (o/insert ::leva-spritesheet ::crop? true)
         (o/insert :asset/char0 ::asset-image-to-load "char0.png")
         ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
         (o/insert :john
-                  #::esse{:sprite-from-asset :asset/char0 :move-duration 100 :move-delay 0 
+                  #::esse{::shader/shader-to-load shader/->hati :move-duration 100 :move-delay 0 
                           :prev-x 4 :prev-y 4 :pos-x 4 :pos-y 4 :x 0 :y 0 :frame-index 0})
         (o/insert :ubim
                   #::esse{:sprite-from-asset :asset/char0 :move-duration 100

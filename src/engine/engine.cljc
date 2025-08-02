@@ -4,6 +4,7 @@
       :cljs [play-cljc.macros-js :refer-macros [gl]])
    [engine.refresh :refer [*refresh?]]
    [engine.session :as session]
+   [engine.shader :as shader]
    [engine.utils :as utils]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
@@ -13,7 +14,7 @@
 (defn load-image-asset [game session*]
   (doseq [{:keys [asset-id image-path]} (o/query-all @session* ::session/load-image)]
     (swap! session* #(o/insert % asset-id ::session/image-loading? true))
-    (println "loading image asset" asset-id image-path)
+    (println "loading image asset for" asset-id image-path)
     (utils/get-image
      image-path
      (fn [{:keys [data width height]}]
@@ -27,6 +28,7 @@
                      (o/fire-rules))))))))
 
 (defn compile-all [game session*]
+  (shader/load-shader game session*)
   (load-image-asset game session*))
 
 (defn init [game]
@@ -94,7 +96,8 @@
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))
-          (render-sprites-esses game session game-width game-height)))
+          (render-sprites-esses game session game-width game-height)
+          (shader/render-shader-esses game session game-width game-height)))
       (catch #?(:clj Exception :cljs js/Error) err
         (println "tick error")
         #?(:clj  (println err)
