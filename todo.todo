@@ -11,8 +11,9 @@ todo:
     ✔ multiple entities with shared behaviour @done(25-08-02 22:54) I think this can be done already, just design boundary problem
     ✔ somehow we learned vertex shaders @done(25-08-02 22:55)
         ☐ transform
-        ☐ bounce
-        ☐ vertex animation
+        ✔ bounce @done(25-08-03 14:17)
+        ✔ vertex animation @done(25-08-03 14:17)
+    ☐ ordered execution
     ☐ text dialogue
     ☐ sound effect
     ☐ music
@@ -23,7 +24,13 @@ todo:
             ☐ we tried tiled and have made one but seems using tilesoup is a grand task, defer for now
             ☐ also what's with that macro for slurp hack?
     ☐ the game...
+
+devs:
     ✔ leva receiving data @done(25-07-29 21:13)
+    ☐ shadow-cljs error hud at runtime
+        ☐ iglu floating point as string 
+            ☐ check cljs <-> clj diff https://github.com/jank-lang/clojure-test-suite/blob/bb437118c9713a7a3d5a7f250fdf309b84b388e0/test/clojure/core_test/str.cljc
+            ☐ check iglu impl on :number https://github.com/oakes/iglu/blob/68e48f8fd2ac6590b6b43fb071a67c8de8c663ce/src/iglu/glsl.cljc#L109
     ☐ build with tools.build
     ☐ native build
     ☐ flag-like behaviour in rules engine (query-once then delete, potentially YAGNI)
