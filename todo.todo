@@ -8,6 +8,7 @@ todo:
         ☐ fps limiting
     ☐ the mutable and the constant, the refreshable and the initialization
     ☐ naming fatigue!!
+        ☐ namespace as rule grouping
     ✔ multiple entities with shared behaviour @done(25-08-02 22:54) I think this can be done already, just design boundary problem
     ✔ somehow we learned vertex shaders @done(25-08-02 22:55)
         ☐ transform
@@ -18,6 +19,7 @@ todo:
     ☐ sound effect
     ☐ music
     ☐ variation in screen size
+    ☐ Texture Atlas
     ☐ instanced image
         ☐ background
         ☐ tilemaps, or try out the supported tilemap related libs
@@ -27,6 +29,8 @@ todo:
 
 devs:
     ✔ leva receiving data @done(25-07-29 21:13)
+    ☐ dependency inversion for engine (everyone supply engine instead)
+        ☐ when in doubt-learn from the behemoth https://docs.unity3d.com/6000.0/Documentation/Manual/execution-order.html
     ☐ shadow-cljs error hud at runtime
         ☐ iglu floating point as string 
             ☐ check cljs <-> clj diff https://github.com/jank-lang/clojure-test-suite/blob/bb437118c9713a7a3d5a7f250fdf309b84b388e0/test/clojure/core_test/str.cljc
@@ -35,3 +39,8 @@ devs:
     ☐ native build
     ☐ flag-like behaviour in rules engine (query-once then delete, potentially YAGNI)
     ✘ bidirectionality (YAGNI alert) @cancelled(25-08-02 23:10) I forgot what this is, leva is already bidirectional
+
+upstream:
+    ☐ play-cljc shader compile error when inserting uniform that is not declared inside shader
+        ☐ "You must define the uniform in your vertex or fragment shader's :uniforms", better if it says which one that needs defintion
+    ☐ iglu floating point
