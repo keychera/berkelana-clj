@@ -11,9 +11,11 @@ todo:
         ☐ namespace as rule grouping
     ✔ multiple entities with shared behaviour @done(25-08-02 22:54) I think this can be done already, just design boundary problem
     ✔ somehow we learned vertex shaders @done(25-08-02 22:55)
-        ☐ transform
+        ✘ transform @cancelled(25-08-06 22:30) no the term i am thinking of
         ✔ bounce @done(25-08-03 14:17)
         ✔ vertex animation @done(25-08-03 14:17)
+    ☐ transform2d
+    ☐ scene graph
     ☐ ordered execution
     ☐ text dialogue
     ☐ sound effect
@@ -37,7 +39,8 @@ devs:
             ☐ check iglu impl on :number https://github.com/oakes/iglu/blob/68e48f8fd2ac6590b6b43fb071a67c8de8c663ce/src/iglu/glsl.cljc#L109
     ☐ build with tools.build
     ☐ native build
-    ☐ flag-like behaviour in rules engine (query-once then delete, potentially YAGNI)
+    ✘ flag-like behaviour in rules engine (query-once then delete, potentially YAGNI) @cancelled(25-08-06 22:50)
+        ☐ I think the behaviour is already like this, if the rule fire once, it can only be queried once, the fact is not deleted tho
     ✘ bidirectionality (YAGNI alert) @cancelled(25-08-02 23:10) I forgot what this is, leva is already bidirectional
 
 upstream:
