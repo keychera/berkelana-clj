@@ -1,0 +1,16 @@
+(ns engine.macros
+  (:require [odoyle.rules :as o]))
+
+(defmacro s->
+  "Thread like `->` but always ends with (o/reset!)."
+  [x & forms]
+  `(-> ~x ~@forms o/reset!))
+
+(defmacro insert!
+  "Thread like `->` but always ends with (o/reset!)."
+  ([[id attr value]]
+   `(s-> ~'session (o/insert ~id ~attr ~value)))
+  ([id attr->value]
+   `(s-> ~'session (o/insert ~id ~attr->value)))
+  ([id attr value]
+   `(s-> ~'session (o/insert ~id ~attr ~value))))

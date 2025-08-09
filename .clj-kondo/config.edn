@@ -2,7 +2,8 @@
            com.rpl.specter/defdynamicnav clojure.core/defn
            com.rpl.specter/defmacroalias clojure.core/def
            com.rpl.specter/defnav clojure.core/defn
-           com.rpl.specter/defrichnav clojure.core/defn}
+           com.rpl.specter/defrichnav clojure.core/defn
+           engine.macros/s-> clojure.core/->}
  :config-in-call
  {play-cljc.macros-java/gl {:ignore [:unresolved-symbol]}
   play-cljc.macros-js/gl {:ignore [:unresolved-symbol]}

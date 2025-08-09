@@ -3,7 +3,7 @@
    [clojure.data :as data]
    [clojure.set :as set]
    [engine.engine :as engine]
-   [engine.session :as session]
+   [engine.world :as world]
    [goog.events :as events]
    [leva.core :as leva]
    [odoyle.rules :as o]
@@ -21,13 +21,13 @@
 (defmulti on-leva-change (fn [k _old _new] k))
 
 (defmethod on-leva-change :crop? [_ _ new']
-  (swap! session/session* o/insert ::session/leva-spritesheet ::session/crop? new'))
+  (swap! world/world* o/insert ::world/leva-spritesheet ::world/crop? new'))
 
 (defmethod on-leva-change :frame [_ _ new']
-  (swap! session/session* o/insert ::session/leva-spritesheet ::session/frame new'))
+  (swap! world/world* o/insert ::world/leva-spritesheet ::world/frame new'))
 
 (defmethod on-leva-change :point [_ _ {:keys [x y]}]
-  (swap! session/session* o/insert ::session/leva-point {::session/x x ::session/y y}))
+  (swap! world/world* o/insert ::world/leva-point {::world/x x ::world/y y}))
 
 (defmethod on-leva-change :default [_k _old' _new']
   #_(println k old' new'))
@@ -57,7 +57,7 @@
      (fn [ts]
        (let [ts ts]
          (try
-           (let [{:keys [pos-x pos-y]} (first (o/query-all @session/session* ::session/sprite-esse))]
+           (let [{:keys [pos-x pos-y]} (first (o/query-all @world/world* ::world/sprite-esse))]
              (swap! !panel-atom assoc :position {:x (or pos-x 0) :y (or pos-y 0)}))
            (catch js/Error e (println e)))
          (update-fps!)
@@ -77,7 +77,7 @@
                    (let [bounds (.getBoundingClientRect canvas)
                          x (- (.-clientX event) (.-left bounds))
                          y (- (.-clientY event) (.-top bounds))]
-                     (swap! session/session* o/insert ::session/mouse {::session/x x ::session/y y}))))
+                     (swap! world/world* o/insert ::world/mouse {::world/x x ::world/y y}))))
   #_(events/listen js/window "mousedown"
                    (fn [event]
                      (swap! engine/*state assoc :mouse-button (mousecode->keyword (.-button event)))))
@@ -97,11 +97,11 @@
                  (fn [event]
                    (when-let [keyname (keycode->keyname (.-keyCode event))]
                      (swap! !panel-atom assoc :pressed-key (str keyname))
-                     (swap! session/session* o/insert keyname ::session/pressed-key ::session/keydown))))
+                     (swap! world/world* o/insert keyname ::world/pressed-key ::world/keydown))))
   (events/listen js/window "keyup"
                  (fn [event]
                    (when-let [keyname (keycode->keyname (.-keyCode event))]
-                     (swap! session/session* o/insert keyname ::session/pressed-key ::session/keyup)))))
+                     (swap! world/world* o/insert keyname ::world/pressed-key ::world/keyup)))))
 
 
 (defn resize [context]
@@ -109,8 +109,8 @@
         display-height context.canvas.clientHeight]
     (set! context.canvas.width display-width)
     (set! context.canvas.height display-height)
-    (swap! session/session* o/insert ::session/window
-           {::session/width display-width ::session/height display-height})))
+    (swap! world/world* o/insert ::world/window
+           {::world/width display-width ::world/height display-height})))
 
 (defn ^:vibe listen-for-resize [context]
   (let [canvas context.canvas

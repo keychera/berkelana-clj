@@ -1,12 +1,14 @@
-(ns engine.session
+(ns engine.world
   (:require
+   #?(:clj [engine.macros :refer [insert! s->]]
+      :cljs [engine.macros :refer-macros [s-> insert!]])
    [clojure.spec.alpha :as s]
    [engine.esse :as esse]
-   [engine.shader :as shader]
-   [engine.time :as time]
-   [odoyle.rules :as o]))
+   [odoyle.rules :as o]
+   [rules.shader :as shader]
+   [rules.time :as time]))
 
-(defonce session* (atom nil))
+(defonce world* (atom nil))
 
 (defn rules-debugger-wrap-fn [rule]
   (o/wrap-rule rule
@@ -52,7 +54,7 @@
      [::leva-spritesheet ::frame leva-frame-index]
      [esse-id ::esse/frame-index _ {:then false}]
      :then
-     (o/insert! esse-id ::esse/frame-index leva-frame-index)]
+     (insert! esse-id ::esse/frame-index leva-frame-index)]
 
     ::move-player
     [:what
@@ -67,12 +69,12 @@
      (<= move-delay 0)
      (#{:left :right :up :down} keyname)
      :then
-     (o/insert! esse-id
-                {::esse/prev-x pos-x
-                 ::esse/prev-y pos-y
-                 ::esse/pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
-                 ::esse/pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
-                 ::esse/move-delay move-duration})]
+     (insert! esse-id
+              {::esse/prev-x pos-x
+               ::esse/prev-y pos-y
+               ::esse/pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
+               ::esse/pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
+               ::esse/move-delay move-duration})]
 
     ::move-delay
     [:what
@@ -80,7 +82,7 @@
      [:ubim ::esse/move-delay move-delay {:then false}]
      :when (> move-delay 0)
      :then
-     (o/insert! :ubim {::esse/move-delay (- move-delay delta-time)})]
+     (insert! :ubim {::esse/move-delay (- move-delay delta-time)})]
 
     ::move-animation
     [:what
@@ -92,22 +94,25 @@
      :when
      (#{:left :right :up :down} keyname)
      :then
-     (if (> anim-elapsed-ms 100) ;; need to think more about the 'mutable' and the constant
-       (o/insert! esse-id {::esse/anim-tick (inc anim-tick) ::esse/anim-elapsed-ms 0})
-       (o/insert! esse-id {::esse/anim-elapsed-ms (+ anim-elapsed-ms delta-time)}))
-     (case keystate
-       ::keydown
-       (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
-         (o/insert! esse-id {::esse/frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)}))
-       ::keyup
-       (o/insert! esse-id {::esse/anim-elapsed-ms 0
-                           ::esse/frame-index (case keyname :down 1 :left 13 :right 25 :up 37 1)}))]
+     (insert! esse-id
+              (merge
+               (if (> anim-elapsed-ms 100)
+                 {::esse/anim-tick (inc anim-tick) ::esse/anim-elapsed-ms 0}
+                 {::esse/anim-elapsed-ms (+ anim-elapsed-ms delta-time)})
+               (case keystate
+                 ::keydown
+                 (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
+                   {::esse/frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)})
+                 ::keyup
+                 {::esse/anim-elapsed-ms 0
+                  ::esse/frame-index (case keyname :down 1 :left 13 :right 25 :up 37 1)}
+                 {})))]
 
     ::one-frame-keyup
     [:what
      [keyname ::pressed-key ::keyup]
      :then
-     (o/retract! keyname ::pressed-key)]
+     (s-> session (o/retract keyname ::pressed-key))]
 
     ::animate-pos
     [:what
@@ -122,9 +127,9 @@
            ease-fn #(Math/pow % 2) grid 64
            x (+ sx (* (- px sx) (ease-fn t)))
            y (+ sy (* (- py sy) (ease-fn t)))]
-       (o/insert! esse-id
-                  {::esse/x (* grid x)
-                   ::esse/y (* grid y)}))]
+       (insert! esse-id
+                {::esse/x (* grid x)
+                 ::esse/y (* grid y)}))]
 
     ::sprite-esse
     [:what
@@ -138,8 +143,9 @@
      [esse-id ::esse/sprite-from-asset asset-id]
      [asset-id ::image-asset image]
      :then
-     (o/retract! esse-id ::esse/sprite-from-asset)
-     (o/insert! esse-id ::esse/current-sprite image)]
+     (s-> session
+          (o/retract esse-id ::esse/sprite-from-asset)
+          (o/insert esse-id ::esse/current-sprite image))]
 
     ::load-image
     [:what
@@ -150,7 +156,7 @@
      [asset-id ::asset-image-to-load image-path]
      [asset-id ::image-loading? true]
      :then
-     (o/retract! asset-id ::asset-image-to-load)]
+     (s-> session (o/retract asset-id ::asset-image-to-load))]
 
     ::image-asset
     [:what
@@ -158,17 +164,31 @@
 
 (defonce ^:devonly previous-rules (atom nil))
 
-(defn init-session [session]
-  (let [all-rules (concat rules shader/rules)
-        session (if (some? session)
+(defn deep-merge [a & maps]
+  (if (map? a)
+    (apply merge-with deep-merge a maps)
+    (apply merge-with deep-merge maps)))
+
+(defn esse
+  [session id & maps]
+  (o/insert session id (apply deep-merge maps)))
+
+(defn init-world [session]
+  (let [all-rules (concat rules
+                          time/rules
+                          shader/rules)
+        init-only? (nil? session)
+        session (if init-only?
+                  (o/->session)
                   (->> @previous-rules ;; devonly : refresh rules without resetting facts
                        (map :name)
-                       (reduce o/remove-rule session))
-                  (o/->session))]
+                       (reduce o/remove-rule session)))]
     (reset! previous-rules all-rules)
     (-> (->> all-rules
              (map #'rules-debugger-wrap-fn)
              (reduce o/add-rule session))
+        (cond-> init-only?
+          (->))
         (o/insert ::leva-spritesheet ::crop? true)
         (o/insert :asset/char0 ::asset-image-to-load "char0.png")
         ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded

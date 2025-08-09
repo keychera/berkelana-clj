@@ -3,18 +3,18 @@
    #?(:clj  [play-cljc.macros-java :refer [gl]]
       :cljs [play-cljc.macros-js :refer-macros [gl]])
    [engine.refresh :refer [*refresh?]]
-   [engine.session :as session]
-   [engine.shader :as shader]
-   [engine.time :as time]
+   [engine.world :as world]
+   [rules.shader :as shader]
+   [rules.time :as time]
    [engine.utils :as utils]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as entities-2d]
    [play-cljc.transforms :as t]))
 
-(defn load-image-asset [game session*]
-  (doseq [{:keys [asset-id image-path]} (o/query-all @session* ::session/load-image)]
-    (swap! session* #(o/insert % asset-id ::session/image-loading? true))
+(defn load-image-asset [game world*]
+  (doseq [{:keys [asset-id image-path]} (o/query-all @world* ::world/load-image)]
+    (swap! world* #(o/insert % asset-id ::world/image-loading? true))
     (println "loading image asset for" asset-id image-path)
     (utils/get-image
      image-path
@@ -22,32 +22,32 @@
        (let [image-entity (entities-2d/->image-entity game data width height)
              image-entity (c/compile game image-entity)
              loaded-image (assoc image-entity :width width :height height)]
-         (swap! session*
+         (swap! world*
                 #(-> %
-                     (o/retract asset-id ::session/image-loading?)
-                     (o/insert asset-id ::session/image-asset loaded-image)
+                     (o/retract asset-id ::world/image-loading?)
+                     (o/insert asset-id ::world/image-asset loaded-image)
                      (o/fire-rules))))))))
 
-(defn compile-all [game session*]
-  (shader/load-shader game session*)
-  (load-image-asset game session*))
+(defn compile-all [game world*]
+  (shader/load-shader game world*)
+  (load-image-asset game world*))
 
 (defn init [game]
   (gl game enable (gl game BLEND))
   (gl game blendFunc (gl game SRC_ALPHA) (gl game ONE_MINUS_SRC_ALPHA))
   (let [[game-width game-height] (utils/get-size game)]
-    (swap! session/session*
-           (fn [session]
-             (-> (session/init-session session)
-                 (o/insert ::session/window
-                           {::session/width game-width
-                            ::session/height game-height})
+    (swap! world/world*
+           (fn [world]
+             (-> (world/init-world world)
+                 (o/insert ::world/window
+                           {::world/width game-width
+                            ::world/height game-height})
                  (o/fire-rules))))
-    (compile-all game session/session*)))
+    (compile-all game world/world*)))
 
-(defn render-sprites-esses [game session game-width game-height]
-  (let [sprite-esses (o/query-all session ::session/sprite-esse)
-        {:keys [crop?]} (first (o/query-all session ::session/leva-spritesheet))]
+(defn render-sprites-esses [game world game-width game-height]
+  (let [sprite-esses (o/query-all world ::world/sprite-esse)
+        {:keys [crop?]} (first (o/query-all world ::world/leva-spritesheet))]
     (doseq [sprite-esse sprite-esses]
       (let [{:keys [x y current-sprite frame-index]} sprite-esse]
         (if crop?
@@ -89,16 +89,16 @@
               :cljs (js/console.error err))))
     (try
       (let [{:keys [delta-time total-time]} game
-            session (swap! session/session*
+            world (swap! world/world*
                            #(-> %
                                 (time/insert total-time delta-time)
                                 o/fire-rules))
-            {game-width :width game-height :height} (first (o/query-all session ::session/window))]
+            {game-width :width game-height :height} (first (o/query-all world ::world/window))]
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))
-          (render-sprites-esses game session game-width game-height)
-          (shader/render-shader-esses game session game-width game-height)))
+          (render-sprites-esses game world game-width game-height)
+          (shader/render-shader-esses game world game-width game-height)))
       (catch #?(:clj Exception :cljs js/Error) err
         (println "tick error")
         #?(:clj  (println err)

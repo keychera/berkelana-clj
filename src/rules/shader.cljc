@@ -1,16 +1,50 @@
-(ns engine.shader
+(ns rules.shader
   (:require
+   #?(:clj [engine.macros :refer [insert! s->]]
+      :cljs [engine.macros :refer-macros [s-> insert!]])
    #?(:clj  [play-cljc.macros-java :refer [gl]]
       :cljs [play-cljc.macros-js :refer-macros [gl]])
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as specter]
    [engine.esse :as esse]
-   [engine.time :as time]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as entities-2d]
    [play-cljc.math :as m]
-   [play-cljc.transforms :as t]))
+   [play-cljc.transforms :as t]
+   [rules.time :as time]))
+
+(def rules
+  (o/ruleset
+   {::load-shader
+    [:what
+     [esse-id ::shader-to-load shader-fn]]
+
+    ::loading-shader
+    [:what
+     [esse-id ::shader-to-load shader-fn]
+     [esse-id ::loading? true]
+     :then
+     (s-> session (o/retract esse-id ::shader-to-load))]
+
+    ::shader-esse
+    [:what
+     [esse-id ::esse/x x]
+     [esse-id ::esse/y y]
+     [esse-id ::compiled-shader compiled-shader]]
+
+    ::shader-update
+    [:what
+     [::time/now ::time/total total-time]
+     [esse-id ::compiled-shader compiled-shader {:then false}]
+     :then
+     (insert! esse-id ::compiled-shader
+              (->> compiled-shader
+                   (specter/setval [:uniforms 'u_time] total-time)))]}))
+
+(s/def ::shader-to-load fn?)
+(s/def ::loading? boolean?)
+(s/def ::compiled-shader map?)
 
 (def vertex-shader
   '{:version "300 es"
@@ -60,53 +94,23 @@
                     'u_time   0}}
       (entities-2d/map->TwoDEntity)))
 
-(def rules
-  (o/ruleset
-   {::load-shader
-    [:what
-     [esse-id ::shader-to-load shader-fn]]
 
-    ::loading-shader
-    [:what
-     [esse-id ::shader-to-load shader-fn]
-     [esse-id ::loading? true]
-     :then
-     (o/retract! esse-id ::shader-to-load)]
 
-    ::shader-esse
-    [:what
-     [esse-id ::esse/x x]
-     [esse-id ::esse/y y]
-     [esse-id ::compiled-shader compiled-shader]]
-
-    ::shader-update
-    [:what
-     [::time/now ::time/total total-time]
-     [esse-id ::compiled-shader compiled-shader {:then false}]
-     :then
-     (o/insert! esse-id ::compiled-shader
-                (->> compiled-shader
-                     (specter/setval [:uniforms 'u_time] total-time)))]}))
-
-(s/def ::shader-to-load fn?)
-(s/def ::loading? boolean?)
-(s/def ::compiled-shader map?)
-
-(defn load-shader [game session*]
-  (doseq [{:keys [esse-id shader-fn]} (o/query-all @session* ::load-shader)]
+(defn load-shader [game wordl*]
+  (doseq [{:keys [esse-id shader-fn]} (o/query-all @wordl* ::load-shader)]
     (println "loading shader for" esse-id)
-    (swap! session* #(o/insert % esse-id ::loading? true))
+    (swap! wordl* #(o/insert % esse-id ::loading? true))
     (try (let [compiled-shader (c/compile game (shader-fn game))]
-           (swap! session* #(-> %
+           (swap! wordl* #(-> %
                                 (o/retract esse-id ::loading?)
                                 (o/insert esse-id ::compiled-shader compiled-shader)
                                 (o/fire-rules))))
          (catch #?(:clj Exception :cljs js/Error) err ;; maybe devonly
-           (swap! session* #(-> % (o/retract esse-id ::loading?) (o/fire-rules)))
+           (swap! wordl* #(-> % (o/retract esse-id ::loading?) (o/fire-rules)))
            (throw err)))))
 
-(defn render-shader-esses [game session game-width game-height]
-  (let [shader-esses (o/query-all session ::shader-esse)]
+(defn render-shader-esses [game world game-width game-height]
+  (let [shader-esses (o/query-all world ::shader-esse)]
     (doseq [esse shader-esses]
       (let [{:keys [x y compiled-shader]} esse]
         (c/render game
