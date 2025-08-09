@@ -14,3 +14,6 @@
    `(s-> ~'session (o/insert ~id ~attr->value)))
   ([id attr value]
    `(s-> ~'session (o/insert ~id ~attr ~value))))
+
+(defmacro vars->map [& vars]
+  (zipmap (map (comp keyword name) vars) vars))

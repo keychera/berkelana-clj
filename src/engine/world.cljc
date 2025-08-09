@@ -4,9 +4,11 @@
    #?(:clj [engine.macros :refer [insert! s->]]
       :cljs [engine.macros :refer-macros [s-> insert!]])
    [clojure.spec.alpha :as s]
-   [rules.esse :as esse]
    [odoyle.rules :as o]
+   [rules.asset.image :as image]
+   [rules.asset.spritesheet :as spritesheet]
    [rules.dev.dev-only :as dev-only]
+   [rules.esse :as esse]
    [rules.grid-move :as grid-move]
    [rules.input :as input]
    [rules.shader :as shader]
@@ -43,12 +45,6 @@
      [::window ::width width]
      [::window ::height height]]
 
-    ::leva-spritesheet
-    [:what 
-     [::leva-spritesheet ::frame leva-frame-index]
-     :then
-     (insert! :ubim ::esse/frame-index leva-frame-index)]
-
     ::move-animation
     [:what
      [::time/now ::time/delta delta-time]
@@ -83,26 +79,12 @@
     ::sprite-ready
     [:what
      [esse-id ::esse/sprite-from-asset asset-id]
-     [asset-id ::image-asset image]
+     [asset-id ::image/asset image]
+     [asset-id ::image/metadata metadata]
      :then
      (s-> session
           (o/retract esse-id ::esse/sprite-from-asset)
-          (o/insert esse-id ::esse/current-sprite image))]
-
-    ::load-image
-    [:what
-     [asset-id ::asset-image-to-load image-path]]
-
-    ::loading-image
-    [:what
-     [asset-id ::asset-image-to-load image-path]
-     [asset-id ::image-loading? true]
-     :then
-     (s-> session (o/retract asset-id ::asset-image-to-load))]
-
-    ::image-asset
-    [:what
-     [asset-id ::image-asset image]]}))
+          (o/insert esse-id ::esse/current-sprite (merge image metadata)))]}))
 
 (defonce ^:devonly previous-rules (atom nil))
 
@@ -119,6 +101,8 @@
   (let [all-rules (concat rules
                           time/rules
                           input/rules
+                          image/rules
+                          spritesheet/rules
                           grid-move/rules
                           shader/rules
                           #?(:cljs leva-rules/rules)
@@ -134,7 +118,9 @@
              (map #'rules-debugger-wrap-fn)
              (reduce o/add-rule session))
         (cond-> init-only?
-          (-> (o/insert :asset/char0 ::asset-image-to-load "char0.png")))
+          (-> (esse :asset/char0
+                    #::image{:to-load "char0.png" :type ::image/spritesheet}
+                    #::spritesheet{:frame-width 32 :frame-height 32})))
         ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
         (esse :john
               grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 2 :pos-y 2}
@@ -148,8 +134,10 @@
 (s/def ::width number?)
 (s/def ::height number?)
 
-(s/def ::frame int?)
-
 (s/def ::asset-image-to-load string?)
 (s/def ::image-loading? boolean?)
 (s/def ::image-asset (s/nilable map?))
+
+
+(comment
+  (o/query-all @world* ::spritesheet/spritesheet))

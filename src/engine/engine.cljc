@@ -7,31 +7,15 @@
    [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
-   [play-cljc.gl.entities-2d :as entities-2d]
    [play-cljc.transforms :as t]
    [rules.dev.dev-only :as dev-only]
    [rules.shader :as shader]
-   [rules.time :as time]))
-
-(defn load-image-asset [game world*]
-  (doseq [{:keys [asset-id image-path]} (o/query-all @world* ::world/load-image)]
-    (swap! world* #(o/insert % asset-id ::world/image-loading? true))
-    (println "loading image asset for" asset-id image-path)
-    (utils/get-image
-     image-path
-     (fn [{:keys [data width height]}]
-       (let [image-entity (entities-2d/->image-entity game data width height)
-             image-entity (c/compile game image-entity)
-             loaded-image (assoc image-entity :width width :height height)]
-         (swap! world*
-                #(-> %
-                     (o/retract asset-id ::world/image-loading?)
-                     (o/insert asset-id ::world/image-asset loaded-image)
-                     (o/fire-rules))))))))
+   [rules.time :as time]
+   [rules.asset.image :as image]))
 
 (defn compile-all [game world*]
   (shader/load-shader game world*)
-  (load-image-asset game world*))
+  (image/load-asset game world*))
 
 (defn init [game]
   (gl game enable (gl game BLEND))
@@ -50,21 +34,19 @@
   (let [sprite-esses (o/query-all world ::world/sprite-esse)]
     (doseq [sprite-esse sprite-esses]
       (let [{:keys [x y current-sprite frame-index]} sprite-esse
-            spritesheet-width 384
-            frame-width 32
-            frame-height 32
-            frames-per-row (/ spritesheet-width frame-width)
+            {:keys [width frame-width frame-height]} current-sprite
+            frames-per-row (/ width frame-width)
             frame-x (mod frame-index frames-per-row)
             frame-y (quot frame-index frames-per-row)
             crop-x (* frame-x frame-width)
             crop-y (* frame-y frame-height)
-            scale 4]
+            scale 2]
         (c/render game
                   (-> current-sprite
                       (t/project game-width game-height)
                       (t/translate x y)
-                      (t/crop crop-x crop-y frame-width frame-height)
-                      (t/scale (* frame-width scale) (* frame-height scale))))))))
+                      (t/scale (* frame-width scale) (* frame-height scale))
+                      (t/crop crop-x crop-y frame-width frame-height)))))))
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
