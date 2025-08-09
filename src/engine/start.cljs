@@ -1,69 +1,24 @@
 (ns engine.start
   (:require
-   [clojure.data :as data]
-   [clojure.set :as set]
    [engine.engine :as engine]
    [engine.world :as world]
    [goog.events :as events]
-   [leva.core :as leva]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as pc]
-   [reagent.core :as r]
-   [reagent.dom.client :as rdomc]))
+   [rules.input :as input]))
 
-(defonce !panel-atom
-  (r/atom
-   {:pressed-key {:value "no key" :render (constantly false)}
-    :crop?       {:value true}
-    :frame       {:value 0 :step 1 :min 0 :max 47}
-    :position    {:x 0 :y 0}}))
-
-(defmulti on-leva-change (fn [k _old _new] k))
-
-(defmethod on-leva-change :crop? [_ _ new']
-  (swap! world/world* o/insert ::world/leva-spritesheet ::world/crop? new'))
-
-(defmethod on-leva-change :frame [_ _ new']
-  (swap! world/world* o/insert ::world/leva-spritesheet ::world/frame new'))
-
-(defmethod on-leva-change :point [_ _ {:keys [x y]}]
-  (swap! world/world* o/insert ::world/leva-point {::world/x x ::world/y y}))
-
-(defmethod on-leva-change :default [_k _old' _new']
-  #_(println k old' new'))
-
-(defn panel-watcher [_ _ old' new']
-  (let [[removed added _common] (data/diff old' new')]
-    (doseq [k (set/union (set (keys removed)) (set (keys added)))]
-      (on-leva-change k (get old' k) (get new' k)))))
-
-(add-watch !panel-atom :panel-watcher #'panel-watcher)
-
-(defonce !fps-counter
-  (r/atom {:last-time (js/performance.now) :frames 0 :fps 0}))
-
-(defn ^:vibe update-fps! []
-  (let [now (js/performance.now)
-        {:keys [last-time frames]} @!fps-counter
-        delta (- now last-time)]
-    (if (> delta 1000) ;; 1 second has passed
-      (swap! !fps-counter assoc :last-time now :frames 0 :fps frames)
-      (swap! !fps-counter update :frames inc))))
-
-
-(defn game-loop [game]
-  (let [game (engine/tick game)]
-    (js/requestAnimationFrame
-     (fn [ts]
-       (let [ts ts]
-         (try
-           (let [{:keys [pos-x pos-y]} (first (o/query-all @world/world* ::world/sprite-esse))]
-             (swap! !panel-atom assoc :position {:x (or pos-x 0) :y (or pos-y 0)}))
-           (catch js/Error e (println e)))
-         (update-fps!)
-         (game-loop (assoc game
-                           :delta-time (- ts (:total-time game))
-                           :total-time ts)))))))
+(defn game-loop
+  ([game] (game-loop game nil))
+  ([game callback-fn]
+   (let [game (engine/tick game)]
+     (js/requestAnimationFrame
+      (fn [ts]
+        (let [ts ts]
+          (when callback-fn (callback-fn))
+          (game-loop (assoc game
+                            :delta-time (- ts (:total-time game))
+                            :total-time ts)
+                     callback-fn)))))))
 
 (defn mousecode->keyword [mousecode]
   (condp = mousecode
@@ -77,7 +32,7 @@
                    (let [bounds (.getBoundingClientRect canvas)
                          x (- (.-clientX event) (.-left bounds))
                          y (- (.-clientY event) (.-top bounds))]
-                     (swap! world/world* o/insert ::world/mouse {::world/x x ::world/y y}))))
+                     (swap! world/world* o/insert ::input/mouse {::input/x x ::input/y y}))))
   #_(events/listen js/window "mousedown"
                    (fn [event]
                      (swap! engine/*state assoc :mouse-button (mousecode->keyword (.-button event)))))
@@ -96,12 +51,12 @@
   (events/listen js/window "keydown"
                  (fn [event]
                    (when-let [keyname (keycode->keyname (.-keyCode event))]
-                     (swap! !panel-atom assoc :pressed-key (str keyname))
-                     (swap! world/world* o/insert keyname ::world/pressed-key ::world/keydown))))
+                     ;;  (swap! !panel-atom assoc :pressed-key (str keyname))
+                     (swap! world/world* o/insert keyname ::input/pressed-key ::input/keydown))))
   (events/listen js/window "keyup"
                  (fn [event]
                    (when-let [keyname (keycode->keyname (.-keyCode event))]
-                     (swap! world/world* o/insert keyname ::world/pressed-key ::world/keyup)))))
+                     (swap! world/world* o/insert keyname ::input/pressed-key ::input/keyup)))))
 
 
 (defn resize [context]
@@ -123,36 +78,19 @@
                             (js/setTimeout #(resize context) 200))))] ; 200ms after last resize event
     (.observe observer canvas)))
 
-;; leva
-(defn main-panel []
-  [:<>
-   [leva/Controls
-    {:folder {:name "FPS"}
-     :atom   !fps-counter
-     :schema {"fps graph"  (leva/monitor (fn [] (:fps @!fps-counter)) {:graph true :interval 200}) 
-              :fps {:order 1}
-              :last-time   {:render (constantly false)}}}]
-   [leva/Controls
-    {:folder {:name "State"}
-     :atom   !panel-atom
-     :schema {"last key"   (leva/monitor (fn [] (:pressed-key @!panel-atom)) {})}}]])
-
-(defonce root (delay (rdomc/create-root (.getElementById js/document "app"))))
-
-(defn ^:export run-reagent [] (rdomc/render @root [main-panel]))
-
 ;; start the game
-(defonce context
-  (let [canvas (js/document.querySelector "canvas")
-        context (.getContext canvas "webgl2")
-        initial-game (assoc (pc/->game context)
-                            :delta-time 0
-                            :total-time (js/performance.now))]
-    (engine/init initial-game)
-    (listen-for-mouse canvas)
-    (listen-for-keys)
-    (resize context)
-    (listen-for-resize context)
-    (run-reagent)
-    (game-loop initial-game)
-    context))
+(defn -main
+  ([] (-main nil))
+  ([loop-callback-fn]
+   (let [canvas (js/document.querySelector "canvas")
+         context (.getContext canvas "webgl2" (clj->js {:alpha false}))
+         initial-game (assoc (pc/->game context)
+                             :delta-time 0
+                             :total-time (js/performance.now))]
+     (engine/init initial-game)
+     (listen-for-mouse canvas)
+     (listen-for-keys)
+     (resize context)
+     (listen-for-resize context)
+     (game-loop initial-game loop-callback-fn)
+     context)))

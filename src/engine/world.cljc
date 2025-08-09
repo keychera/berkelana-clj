@@ -5,8 +5,10 @@
    [clojure.spec.alpha :as s]
    [engine.esse :as esse]
    [odoyle.rules :as o]
+   [rules.grid-move :as grid-move]
    [rules.shader :as shader]
-   [rules.time :as time]))
+   [rules.time :as time]
+   [rules.input :as input]))
 
 (defonce world* (atom nil))
 
@@ -24,8 +26,8 @@
                   (f session match))
                 :then
                 (fn [f session match]
-                  (when (#{::sprite-ready} (:name rule))
-                    (println "firing" (:name rule)))
+                  (when (#{} (:name rule))
+                    (println "firing" (:name rule) "for" (select-keys match [:esse-id])))
                   (f session match))
                 :then-finally
                 (fn [f session]
@@ -39,15 +41,6 @@
      [::window ::width width]
      [::window ::height height]]
 
-    ::mouse
-    [:what
-     [::mouse ::x x]
-     [::mouse ::y y]]
-
-    ::pressed-key
-    [:what
-     [keyname ::pressed-key ::keyup]]
-
     ::leva-spritesheet
     [:what
      [::leva-spritesheet ::crop? crop?]
@@ -56,38 +49,10 @@
      :then
      (insert! esse-id ::esse/frame-index leva-frame-index)]
 
-    ::move-player
-    [:what
-     [::time/now ::time/delta delta-time]
-     [keyname ::pressed-key ::keydown]
-     [:ubim ::esse/pos-x pos-x {:then false}]
-     [esse-id ::esse/pos-y pos-y {:then false}]
-     [esse-id ::esse/frame-index frame-index {:then false}]
-     [esse-id ::esse/move-delay move-delay {:then false}]
-     [esse-id ::esse/move-duration move-duration {:then false}]
-     :when
-     (<= move-delay 0)
-     (#{:left :right :up :down} keyname)
-     :then
-     (insert! esse-id
-              {::esse/prev-x pos-x
-               ::esse/prev-y pos-y
-               ::esse/pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
-               ::esse/pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
-               ::esse/move-delay move-duration})]
-
-    ::move-delay
-    [:what
-     [::time/now ::time/delta delta-time]
-     [:ubim ::esse/move-delay move-delay {:then false}]
-     :when (> move-delay 0)
-     :then
-     (insert! :ubim {::esse/move-delay (- move-delay delta-time)})]
-
     ::move-animation
     [:what
      [::time/now ::time/delta delta-time]
-     [keyname ::pressed-key keystate]
+     [keyname ::input/pressed-key keystate]
      [:ubim ::esse/anim-tick anim-tick {:then false}]
      [esse-id ::esse/anim-elapsed-ms anim-elapsed-ms {:then false}]
      [esse-id ::esse/frame-index frame-index {:then false}]
@@ -100,36 +65,13 @@
                  {::esse/anim-tick (inc anim-tick) ::esse/anim-elapsed-ms 0}
                  {::esse/anim-elapsed-ms (+ anim-elapsed-ms delta-time)})
                (case keystate
-                 ::keydown
+                 ::input/keydown
                  (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
                    {::esse/frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)})
-                 ::keyup
+                 ::input/keyup
                  {::esse/anim-elapsed-ms 0
                   ::esse/frame-index (case keyname :down 1 :left 13 :right 25 :up 37 1)}
                  {})))]
-
-    ::one-frame-keyup
-    [:what
-     [keyname ::pressed-key ::keyup]
-     :then
-     (s-> session (o/retract keyname ::pressed-key))]
-
-    ::animate-pos
-    [:what
-     [:ubim ::esse/pos-x px]
-     [esse-id ::esse/pos-y py]
-     [esse-id ::esse/prev-x sx]
-     [esse-id ::esse/prev-y sy]
-     [esse-id ::esse/move-delay move-delay]
-     [esse-id ::esse/move-duration move-duration {:then false}]
-     :then
-     (let [t (- 1.0 (/ move-delay move-duration))
-           ease-fn #(Math/pow % 2) grid 64
-           x (+ sx (* (- px sx) (ease-fn t)))
-           y (+ sy (* (- py sy) (ease-fn t)))]
-       (insert! esse-id
-                {::esse/x (* grid x)
-                 ::esse/y (* grid y)}))]
 
     ::sprite-esse
     [:what
@@ -175,8 +117,10 @@
 
 (defn init-world [session]
   (let [all-rules (concat rules
-                          time/rules
-                          shader/rules)
+                          input/rules
+                          grid-move/rules
+                          shader/rules
+                          time/rules)
         init-only? (nil? session)
         session (if init-only?
                   (o/->session)
@@ -188,25 +132,21 @@
              (map #'rules-debugger-wrap-fn)
              (reduce o/add-rule session))
         (cond-> init-only?
-          (->))
+          (-> (o/insert :asset/char0 ::asset-image-to-load "char0.png")))
         (o/insert ::leva-spritesheet ::crop? true)
-        (o/insert :asset/char0 ::asset-image-to-load "char0.png")
         ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
-        (o/insert :john
-                  #::esse{::shader/shader-to-load shader/->hati :move-duration 100 :move-delay 0
-                          :prev-x 4 :prev-y 4 :pos-x 4 :pos-y 4 :x 0 :y 0 :frame-index 0})
-        (o/insert :ubim
-                  #::esse{:sprite-from-asset :asset/char0 :move-duration 100
-                          #_mutable
-                          :prev-x 4 :prev-y 4 :pos-x 4 :pos-y 4 :x 0 :y 0
-                          :frame-index 0 :move-delay 0 :anim-tick 0 :anim-elapsed-ms 0}))))
+        (esse :john
+              #::esse{::shader/shader-to-load shader/->hati :move-duration 100 :move-delay 0
+                      :prev-x 4 :prev-y 4 :pos-x 4 :pos-y 4 :x 0 :y 0 :frame-index 0})
+        (esse :ubim
+              grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 4 :pos-y 4}
+              #::esse{:sprite-from-asset :asset/char0 :move-duration 100
+                      :x 0 :y 0
+                      :frame-index 0 :move-delay 0 :anim-tick 0 :anim-elapsed-ms 0}))))
 
 ;; specs
 (s/def ::width number?)
 (s/def ::height number?)
-
-(s/def ::x number?)
-(s/def ::y number?)
 
 (s/def ::pressed-key keyword?)
 

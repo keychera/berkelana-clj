@@ -46,33 +46,24 @@
     (compile-all game world/world*)))
 
 (defn render-sprites-esses [game world game-width game-height]
-  (let [sprite-esses (o/query-all world ::world/sprite-esse)
-        {:keys [crop?]} (first (o/query-all world ::world/leva-spritesheet))]
+  (let [sprite-esses (o/query-all world ::world/sprite-esse)]
     (doseq [sprite-esse sprite-esses]
-      (let [{:keys [x y current-sprite frame-index]} sprite-esse]
-        (if crop?
-          (let [spritesheet-width 384
-                frame-width 32
-                frame-height 32
-                frames-per-row (/ spritesheet-width frame-width)
-                frame-x (mod frame-index frames-per-row)
-                frame-y (quot frame-index frames-per-row)
-                crop-x (* frame-x frame-width)
-                crop-y (* frame-y frame-height)
-                scale 4]
-            (c/render game
-                      (-> current-sprite
-                          (t/project game-width game-height)
-                          (t/translate x y)
-                          (t/crop crop-x crop-y frame-width frame-height)
-                          (t/scale (* frame-width scale) (* frame-height scale)))))
+        (let [{:keys [x y current-sprite frame-index]} sprite-esse
+              spritesheet-width 384
+              frame-width 32
+              frame-height 32
+              frames-per-row (/ spritesheet-width frame-width)
+              frame-x (mod frame-index frames-per-row)
+              frame-y (quot frame-index frames-per-row)
+              crop-x (* frame-x frame-width)
+              crop-y (* frame-y frame-height)
+              scale 4]
           (c/render game
                     (-> current-sprite
                         (t/project game-width game-height)
                         (t/translate x y)
-                        (t/scale (:width current-sprite)
-                                 (:height current-sprite))
-                        (t/crop 0 0 (:width current-sprite) (:height current-sprite)))))))))
+                        (t/crop crop-x crop-y frame-width frame-height)
+                        (t/scale (* frame-width scale) (* frame-height scale))))))))
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
