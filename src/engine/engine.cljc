@@ -3,14 +3,15 @@
    #?(:clj  [play-cljc.macros-java :refer [gl]]
       :cljs [play-cljc.macros-js :refer-macros [gl]])
    [engine.refresh :refer [*refresh?]]
-   [engine.world :as world]
-   [rules.shader :as shader]
-   [rules.time :as time]
    [engine.utils :as utils]
+   [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as entities-2d]
-   [play-cljc.transforms :as t]))
+   [play-cljc.transforms :as t]
+   [rules.dev.dev-only :as dev-only]
+   [rules.shader :as shader]
+   [rules.time :as time]))
 
 (defn load-image-asset [game world*]
   (doseq [{:keys [asset-id image-path]} (o/query-all @world* ::world/load-image)]
@@ -48,22 +49,22 @@
 (defn render-sprites-esses [game world game-width game-height]
   (let [sprite-esses (o/query-all world ::world/sprite-esse)]
     (doseq [sprite-esse sprite-esses]
-        (let [{:keys [x y current-sprite frame-index]} sprite-esse
-              spritesheet-width 384
-              frame-width 32
-              frame-height 32
-              frames-per-row (/ spritesheet-width frame-width)
-              frame-x (mod frame-index frames-per-row)
-              frame-y (quot frame-index frames-per-row)
-              crop-x (* frame-x frame-width)
-              crop-y (* frame-y frame-height)
-              scale 4]
-          (c/render game
-                    (-> current-sprite
-                        (t/project game-width game-height)
-                        (t/translate x y)
-                        (t/crop crop-x crop-y frame-width frame-height)
-                        (t/scale (* frame-width scale) (* frame-height scale))))))))
+      (let [{:keys [x y current-sprite frame-index]} sprite-esse
+            spritesheet-width 384
+            frame-width 32
+            frame-height 32
+            frames-per-row (/ spritesheet-width frame-width)
+            frame-x (mod frame-index frames-per-row)
+            frame-y (quot frame-index frames-per-row)
+            crop-x (* frame-x frame-width)
+            crop-y (* frame-y frame-height)
+            scale 4]
+        (c/render game
+                  (-> current-sprite
+                      (t/project game-width game-height)
+                      (t/translate x y)
+                      (t/crop crop-x crop-y frame-width frame-height)
+                      (t/scale (* frame-width scale) (* frame-height scale))))))))
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
@@ -71,19 +72,19 @@
 
 (defn tick [game]
   (if @*refresh?
-    (try (println "calling (compile-all game)")
+    (try (println "calling (init game)")
          (swap! *refresh? not)
          (init game)
          (catch #?(:clj Exception :cljs js/Error) err
-           (println "compile-all error")
+           (swap! world/world* #(-> % (dev-only/warn (str "init error " err))))
            #?(:clj  (println err)
               :cljs (js/console.error err))))
     (try
       (let [{:keys [delta-time total-time]} game
             world (swap! world/world*
-                           #(-> %
-                                (time/insert total-time delta-time)
-                                o/fire-rules))
+                         #(-> %
+                              (time/insert total-time delta-time)
+                              o/fire-rules))
             {game-width :width game-height :height} (first (o/query-all world ::world/window))]
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
@@ -91,7 +92,7 @@
           (render-sprites-esses game world game-width game-height)
           (shader/render-shader-esses game world game-width game-height)))
       (catch #?(:clj Exception :cljs js/Error) err
-        (println "tick error")
+        (swap! world/world* #(-> % (dev-only/warn (str "tick error " err))))
         #?(:clj  (println err)
            :cljs (js/console.error err)))))
   game)

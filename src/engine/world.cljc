@@ -1,14 +1,16 @@
 (ns engine.world
   (:require
+   #?(:cljs [rules.dev.leva-rules :as leva-rules])
    #?(:clj [engine.macros :refer [insert! s->]]
       :cljs [engine.macros :refer-macros [s-> insert!]])
    [clojure.spec.alpha :as s]
-   [engine.esse :as esse]
+   [rules.esse :as esse]
    [odoyle.rules :as o]
+   [rules.dev.dev-only :as dev-only]
    [rules.grid-move :as grid-move]
+   [rules.input :as input]
    [rules.shader :as shader]
-   [rules.time :as time]
-   [rules.input :as input]))
+   [rules.time :as time]))
 
 (defonce world* (atom nil))
 
@@ -42,12 +44,10 @@
      [::window ::height height]]
 
     ::leva-spritesheet
-    [:what
-     [::leva-spritesheet ::crop? crop?]
+    [:what 
      [::leva-spritesheet ::frame leva-frame-index]
-     [esse-id ::esse/frame-index _ {:then false}]
      :then
-     (insert! esse-id ::esse/frame-index leva-frame-index)]
+     (insert! :ubim ::esse/frame-index leva-frame-index)]
 
     ::move-animation
     [:what
@@ -117,10 +117,12 @@
 
 (defn init-world [session]
   (let [all-rules (concat rules
+                          time/rules
                           input/rules
                           grid-move/rules
                           shader/rules
-                          time/rules)
+                          #?(:cljs leva-rules/rules)
+                          dev-only/rules)
         init-only? (nil? session)
         session (if init-only?
                   (o/->session)
@@ -133,39 +135,21 @@
              (reduce o/add-rule session))
         (cond-> init-only?
           (-> (o/insert :asset/char0 ::asset-image-to-load "char0.png")))
-        (o/insert ::leva-spritesheet ::crop? true)
         ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
         (esse :john
-              #::esse{::shader/shader-to-load shader/->hati :move-duration 100 :move-delay 0
-                      :prev-x 4 :prev-y 4 :pos-x 4 :pos-y 4 :x 0 :y 0 :frame-index 0})
+              grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 2 :pos-y 2}
+              #::esse{::shader/shader-to-load shader/->hati :x 0 :y 0})
         (esse :ubim
               grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 4 :pos-y 4}
-              #::esse{:sprite-from-asset :asset/char0 :move-duration 100
-                      :x 0 :y 0
-                      :frame-index 0 :move-delay 0 :anim-tick 0 :anim-elapsed-ms 0}))))
+              #::esse{:sprite-from-asset :asset/char0
+                      :x 0 :y 0 :frame-index 0 :anim-tick 0 :anim-elapsed-ms 0}))))
 
 ;; specs
 (s/def ::width number?)
 (s/def ::height number?)
 
-(s/def ::pressed-key keyword?)
-
-(s/def ::crop? boolean?)
 (s/def ::frame int?)
 
 (s/def ::asset-image-to-load string?)
 (s/def ::image-loading? boolean?)
 (s/def ::image-asset (s/nilable map?))
-
-(comment
-  (-> (->> (o/ruleset
-            {::move-player
-             [:what
-              [keyname ::pressed-key ::keydown]
-              :then
-              (println "pressed!" keyname)]})
-           (reduce o/add-rule (o/->session)))
-      (o/insert "thiskey" ::pressed-key ::keydown)
-      (o/fire-rules)
-      (o/fire-rules)
-      (o/query-all)))

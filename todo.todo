@@ -6,9 +6,9 @@ todo:
     ✔ fps counter @done(25-08-01 00:55)
         ✔ why is it 165 fps? try to understand it more @done(25-08-02 23:08) it's monitor refresh rate!
         ☐ fps limiting
-    ☐ the mutable and the constant, the refreshable and the initialization
-    ☐ naming fatigue!!
-        ☐ namespace as rule grouping
+    ✔ the mutable and the constant, the refreshable and the initialization @done(25-08-09 19:01)
+    ✔ naming fatigue!! @done(25-08-09 19:01)
+        ✔ namespace as rule grouping @done(25-08-09 19:01)
     ✔ multiple entities with shared behaviour @done(25-08-02 22:54) I think this can be done already, just design boundary problem
     ✔ somehow we learned vertex shaders @done(25-08-02 22:55)
         ✘ transform @cancelled(25-08-06 22:30) no the term i am thinking of
@@ -33,7 +33,7 @@ devs:
     ✔ leva receiving data @done(25-07-29 21:13)
     ☐ dependency inversion for engine (everyone supply engine instead)
         ☐ when in doubt-learn from the behemoth https://docs.unity3d.com/6000.0/Documentation/Manual/execution-order.html
-    ☐ shadow-cljs error hud at runtime
+    ✔ shadow-cljs error hud at runtime @done(25-08-09 19:02)
         ☐ iglu floating point as string 
             ☐ check cljs <-> clj diff https://github.com/jank-lang/clojure-test-suite/blob/bb437118c9713a7a3d5a7f250fdf309b84b388e0/test/clojure/core_test/str.cljc
             ☐ check iglu impl on :number https://github.com/oakes/iglu/blob/68e48f8fd2ac6590b6b43fb071a67c8de8c663ce/src/iglu/glsl.cljc#L109

@@ -3,14 +3,14 @@
    [clojure.data :as data]
    [clojure.set :as set]
    [clojure.spec.test.alpha :as st]
-   [engine.world :as session]
    [engine.start :as start]
+   [engine.world :as world]
    [leva.core :as leva]
    [odoyle.rules :as o]
    [reagent.core :as r]
    [reagent.dom.client :as rdomc]
-   #_[rules.dev-only :as dev-only]
-   #_[rules.leva-rules :as leva-rules]
+   [rules.dev.dev-only :as dev-only]
+   [rules.dev.leva-rules :as leva-rules]
    [shadow.cljs.devtools.client.hud :as hud]
    [shadow.dom :as dom]))
 
@@ -24,12 +24,10 @@
 (defmulti on-leva-change (fn [k _old _new] k))
 
 (defmethod on-leva-change :rotation [_ _ new']
-  ;; (swap! world/world* o/insert ::leva-rules/leva-spritesheet ::leva-rules/rotation new')
-  )
+  (swap! world/world* o/insert ::leva-rules/leva-spritesheet ::leva-rules/rotation new'))
 
 (defmethod on-leva-change :scale [_ _ new']
-  ;; (swap! world/world* o/insert ::leva-rules/leva-spritesheet ::leva-rules/scale new')
-  )
+  (swap! world/world* o/insert ::leva-rules/leva-spritesheet ::leva-rules/scale new'))
 
 (defmethod on-leva-change :default [_k _old' _new']
   #_(println k old' new'))
@@ -70,21 +68,21 @@
 
 (def !hud-visible (atom false))
 
-;; (defn listen-to-warning! []
-;;   (let [warning (first (o/query-all @world/world* ::dev-only/warning))]
-;;     (if (some? warning)
-;;       (when (not @!hud-visible)
-;;         (hud/hud-warnings {:info {:sources [{:warnings [{:resource-name "code"
-;;                                                          :msg (:message warning)
-;;                                                          :source-excerpt "what to pass here?"}]}]}})
-;;         (reset! !hud-visible true))
-;;       (when @!hud-visible
-;;         (dom/remove (dom/by-id hud/hud-id))
-;;         (reset! !hud-visible false)))))
+(defn listen-to-warning! []
+  (let [warning (first (o/query-all @world/world* ::dev-only/warning))]
+    (if (some? warning)
+      (when (not @!hud-visible)
+        (hud/hud-warnings {:info {:sources [{:warnings [{:resource-name "code"
+                                                         :msg (:message warning)
+                                                         :source-excerpt "what to pass here?"}]}]}})
+        (reset! !hud-visible true))
+      (when @!hud-visible
+        (dom/remove (dom/by-id hud/hud-id))
+        (reset! !hud-visible false)))))
 
 (defn dev-loop []
   (update-fps!)
-  #_(listen-to-warning!))
+  (listen-to-warning!))
 
 (defonce dev-only
   (do (run-reagent)

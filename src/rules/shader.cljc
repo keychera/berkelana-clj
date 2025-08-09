@@ -6,7 +6,7 @@
       :cljs [play-cljc.macros-js :refer-macros [gl]])
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as specter]
-   [engine.esse :as esse]
+   [rules.esse :as esse]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as entities-2d]
