@@ -1,4 +1,4 @@
-(ns rules.asset.image
+(ns rules.asset.asset
   (:require
    [clojure.spec.alpha :as s]
    [clojure.string :as str]

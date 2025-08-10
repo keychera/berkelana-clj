@@ -5,7 +5,7 @@
       :cljs [engine.macros :refer-macros [insert!]])
    [clojure.spec.alpha :as s]
    [odoyle.rules :as o]
-   [rules.asset.image :as image]
+   [rules.asset.asset :as asset]
    [rules.asset.spritesheet :as spritesheet]
    [rules.dev.dev-only :as dev-only]
    [rules.esse :as esse]
@@ -74,8 +74,8 @@
      [esse-id ::esse/x x]
      [esse-id ::esse/y y]
      [esse-id ::esse/frame-index frame-index]
-     [esse-id ::esse/sprite-from-image-asset asset-id]
-     [asset-id ::image/loaded? true]]}))
+     [esse-id ::esse/sprite-from-asset asset-id]
+     [asset-id ::asset/loaded? true]]}))
 
 (defonce ^:devonly previous-rules (atom nil))
 
@@ -92,7 +92,7 @@
   (let [all-rules (concat rules
                           time/rules
                           input/rules
-                          image/rules
+                          asset/rules
                           spritesheet/rules
                           grid-move/rules
                           shader/rules
@@ -110,7 +110,7 @@
              (reduce o/add-rule session))
         (cond-> init-only?
           (-> (esse :asset/char0
-                    #::image{:to-load "char0.png" :type ::image/spritesheet}
+                    #::asset{:to-load "char0.png" :type ::asset/spritesheet}
                     #::spritesheet{:frame-width 32 :frame-height 32})))
         ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
         (esse :john
@@ -118,17 +118,12 @@
               #::esse{::shader/shader-to-load shader/->hati :x 0 :y 0})
         (esse :ubim
               grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 4 :pos-y 4}
-              #::esse{:sprite-from-image-asset :asset/char0
+              #::esse{:sprite-from-asset :asset/char0
                       :x 0 :y 0 :frame-index 0 :anim-tick 0 :anim-elapsed-ms 0}))))
 
 ;; specs
 (s/def ::width number?)
 (s/def ::height number?)
-
-(s/def ::asset-image-to-load string?)
-(s/def ::image-loading? boolean?)
-(s/def ::image-asset (s/nilable map?))
-
 
 (comment
   (o/query-all @world* ::spritesheet/spritesheet))

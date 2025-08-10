@@ -6,7 +6,7 @@
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as entities-2d]
-   [rules.asset.image :as image]))
+   [rules.asset.asset :as asset]))
 
 (s/def ::frame-width int?)
 (s/def ::frame-height int?)
@@ -15,18 +15,18 @@
   (o/ruleset
    {::sprite-metadata
     [:what
-     [asset-id ::image/loaded? true]
+     [asset-id ::asset/loaded? true]
      [asset-id ::frame-width frame-width]
      [asset-id ::frame-height frame-height]
      :then
-     (swap! image/db* update asset-id #(merge % (vars->map frame-width frame-height)))]}))
+     (swap! asset/db* update asset-id #(merge % (vars->map frame-width frame-height)))]}))
 
-(defmethod image/process-asset ::image/spritesheet
+(defmethod asset/process-asset ::asset/spritesheet
   [game world* {:keys [asset-id asset-type asset-path]} {:keys [data width height]}]
   (let [image-entity (entities-2d/->image-entity game data width height)
         image-entity (c/compile game image-entity)
         loaded-image (assoc image-entity :width width :height height :asset-type asset-type)]
     (println "loaded spritesheet asset from" asset-path)
-    (swap! image/db* assoc asset-id loaded-image)
-    (swap! world* #(-> % (o/insert asset-id ::image/loaded? true)))))
+    (swap! asset/db* assoc asset-id loaded-image)
+    (swap! world* #(-> % (o/insert asset-id ::asset/loaded? true)))))
 

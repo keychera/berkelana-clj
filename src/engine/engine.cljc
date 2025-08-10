@@ -8,7 +8,7 @@
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.transforms :as t]
-   [rules.asset.image :as image]
+   [rules.asset.asset :as asset]
    [rules.asset.tiled :as tiled]
    [rules.dev.dev-only :as dev-only]
    [rules.shader :as shader]
@@ -17,7 +17,7 @@
 (defn compile-all [game world*]
   (tiled/load-tiled-map game tiled/tiled-map-koalio)
   (shader/load-shader game world*)
-  (image/load-asset game world*))
+  (asset/load-asset game world*))
 
 (defn init [game]
   (gl game enable (gl game BLEND))
@@ -36,7 +36,7 @@
   (let [sprite-esses (o/query-all world ::world/sprite-esse)]
     (doseq [sprite-esse sprite-esses]
       (let [{:keys [x y asset-id frame-index]} sprite-esse
-            current-sprite (get @image/db* asset-id)
+            current-sprite (get @asset/db* asset-id)
             {:keys [width frame-width frame-height]} current-sprite
             frames-per-row (/ width frame-width)
             frame-x (mod frame-index frames-per-row)
