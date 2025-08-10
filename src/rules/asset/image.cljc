@@ -9,9 +9,9 @@
 (s/def ::to-load (s/and string? #(str/ends-with? % ".png")))
 (s/def ::type #{::spritesheet})
 
-;; asse
-(s/def ::asset map?)
-(s/def ::metadata map?)
+;; asset
+(s/def ::loaded? boolean?)
+(defonce db* (atom {}))
 
 (def rules
   (o/ruleset

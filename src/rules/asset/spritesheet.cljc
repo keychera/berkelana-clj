@@ -1,7 +1,7 @@
 (ns rules.asset.spritesheet
   (:require
-   #?(:clj [engine.macros :refer [insert! vars->map]]
-      :cljs [engine.macros :refer-macros [insert! vars->map]])
+   #?(:clj [engine.macros :refer [vars->map]]
+      :cljs [engine.macros :refer-macros [vars->map]])
    [clojure.spec.alpha :as s]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
@@ -15,11 +15,11 @@
   (o/ruleset
    {::sprite-metadata
     [:what
-     [asset-id ::image/asset spritesheet {:then false}]
+     [asset-id ::image/loaded? true]
      [asset-id ::frame-width frame-width]
      [asset-id ::frame-height frame-height]
      :then
-     (insert! asset-id ::image/metadata (merge spritesheet (vars->map frame-width frame-height)))]}))
+     (swap! image/db* update asset-id #(merge % (vars->map frame-width frame-height)))]}))
 
 (defmethod image/process-asset ::image/spritesheet
   [game world* {:keys [asset-id asset-type asset-path]} {:keys [data width height]}]
@@ -27,5 +27,6 @@
         image-entity (c/compile game image-entity)
         loaded-image (assoc image-entity :width width :height height :asset-type asset-type)]
     (println "loaded spritesheet asset from" asset-path)
-    (swap! world* #(-> % (o/insert asset-id ::image/asset loaded-image)))))
+    (swap! image/db* assoc asset-id loaded-image)
+    (swap! world* #(-> % (o/insert asset-id ::image/loaded? true)))))
 

@@ -35,7 +35,8 @@
 (defn render-sprites-esses [game world game-width game-height]
   (let [sprite-esses (o/query-all world ::world/sprite-esse)]
     (doseq [sprite-esse sprite-esses]
-      (let [{:keys [x y current-sprite frame-index]} sprite-esse
+      (let [{:keys [x y asset-id frame-index]} sprite-esse
+            current-sprite (get @image/db* asset-id)
             {:keys [width frame-width frame-height]} current-sprite
             frames-per-row (/ width frame-width)
             frame-x (mod frame-index frames-per-row)

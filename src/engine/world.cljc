@@ -1,8 +1,8 @@
 (ns engine.world
   (:require
    #?(:cljs [rules.dev.leva-rules :as leva-rules])
-   #?(:clj [engine.macros :refer [insert! s->]]
-      :cljs [engine.macros :refer-macros [s-> insert!]])
+   #?(:clj [engine.macros :refer [insert!]]
+      :cljs [engine.macros :refer-macros [insert!]])
    [clojure.spec.alpha :as s]
    [odoyle.rules :as o]
    [rules.asset.image :as image]
@@ -74,17 +74,8 @@
      [esse-id ::esse/x x]
      [esse-id ::esse/y y]
      [esse-id ::esse/frame-index frame-index]
-     [esse-id ::esse/current-sprite current-sprite]]
-
-    ::sprite-ready
-    [:what
-     [esse-id ::esse/sprite-from-asset asset-id]
-     [asset-id ::image/asset image]
-     [asset-id ::image/metadata metadata]
-     :then
-     (s-> session
-          (o/retract esse-id ::esse/sprite-from-asset)
-          (o/insert esse-id ::esse/current-sprite (merge image metadata)))]}))
+     [esse-id ::esse/sprite-from-image-asset asset-id]
+     [asset-id ::image/loaded? true]]}))
 
 (defonce ^:devonly previous-rules (atom nil))
 
@@ -127,7 +118,7 @@
               #::esse{::shader/shader-to-load shader/->hati :x 0 :y 0})
         (esse :ubim
               grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 4 :pos-y 4}
-              #::esse{:sprite-from-asset :asset/char0
+              #::esse{:sprite-from-image-asset :asset/char0
                       :x 0 :y 0 :frame-index 0 :anim-tick 0 :anim-elapsed-ms 0}))))
 
 ;; specs
