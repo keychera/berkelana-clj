@@ -2,14 +2,15 @@
   (:require
    #?(:clj  [play-cljc.macros-java :refer [gl]]
       :cljs [play-cljc.macros-js :refer-macros [gl]])
+   [assets.asset :as asset]
+   [assets.spritesheet :as spritesheet]
+   [assets.tiled :as tiled]
    [engine.refresh :refer [*refresh?]]
    [engine.utils :as utils]
    [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.transforms :as t]
-   [rules.asset.asset :as asset]
-   [rules.asset.tiled :as tiled]
    [rules.dev.dev-only :as dev-only]
    [rules.shader :as shader]
    [rules.time :as time]))
@@ -36,16 +37,15 @@
   (let [sprite-esses (o/query-all world ::world/sprite-esse)]
     (doseq [sprite-esse sprite-esses]
       (let [{:keys [x y asset-id frame-index]} sprite-esse
-            current-sprite (get @asset/db* asset-id)
-            {:keys [width frame-width frame-height]} current-sprite
-            frames-per-row (/ width frame-width)
+            {::spritesheet/keys [image frame-height frame-width]} (get @asset/db* asset-id)
+            frames-per-row (/ (:width image) frame-width)
             frame-x (mod frame-index frames-per-row)
             frame-y (quot frame-index frames-per-row)
             crop-x (* frame-x frame-width)
             crop-y (* frame-y frame-height)
             scale 2]
         (c/render game
-                  (-> current-sprite
+                  (-> image
                       (t/project game-width game-height)
                       (t/translate x y)
                       (t/scale (* frame-width scale) (* frame-height scale))

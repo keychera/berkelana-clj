@@ -103,10 +103,9 @@
     (try (let [compiled-shader (c/compile game (shader-fn game))]
            (swap! world* #(-> %
                                 (o/retract esse-id ::loading?)
-                                (o/insert esse-id ::compiled-shader compiled-shader)
-                                (o/fire-rules))))
+                                (o/insert esse-id ::compiled-shader compiled-shader))))
          (catch #?(:clj Exception :cljs js/Error) err ;; maybe devonly
-           (swap! world* #(-> % (o/retract esse-id ::loading?) (o/fire-rules)))
+           (swap! world* #(-> % (o/retract esse-id ::loading?)))
            (throw err)))))
 
 (defn render-shader-esses [game world game-width game-height]

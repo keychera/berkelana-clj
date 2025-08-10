@@ -5,14 +5,15 @@
       :cljs [engine.macros :refer-macros [insert!]])
    [clojure.spec.alpha :as s]
    [odoyle.rules :as o]
-   [rules.asset.asset :as asset]
-   [rules.asset.spritesheet :as spritesheet]
+   [assets.asset :as asset]
+   [assets.spritesheet :as spritesheet]
    [rules.dev.dev-only :as dev-only]
    [rules.esse :as esse]
    [rules.grid-move :as grid-move]
    [rules.input :as input]
    [rules.shader :as shader]
-   [rules.time :as time]))
+   [rules.time :as time]
+   [assets.tiled :as tiled]))
 
 (defonce world* (atom nil))
 
@@ -85,15 +86,20 @@
     (apply merge-with deep-merge maps)))
 
 (defn esse
-  [session id & maps]
-  (o/insert session id (apply deep-merge maps)))
+  [session esse-id & maps]
+  (o/insert session esse-id (apply deep-merge maps)))
+
+(defn asset
+  [session asset-id & maps]
+  (swap! asset/db* assoc asset-id (apply deep-merge maps)) 
+  (o/insert session asset-id ::asset/loaded? false))
 
 (defn init-world [session]
   (let [all-rules (concat rules
                           time/rules
                           input/rules
                           asset/rules
-                          spritesheet/rules
+                          tiled/rules
                           grid-move/rules
                           shader/rules
                           #?(:cljs leva-rules/rules)
@@ -109,9 +115,9 @@
              (map #'rules-debugger-wrap-fn)
              (reduce o/add-rule session))
         (cond-> init-only?
-          (-> (esse :asset/char0
-                    #::asset{:to-load "char0.png" :type ::asset/spritesheet}
-                    #::spritesheet{:frame-width 32 :frame-height 32})))
+          (-> (asset :asset/char0
+                     #::asset{:img-to-load "char0.png" :type ::asset/spritesheet}
+                     #::spritesheet{:frame-width 32 :frame-height 32})))
         ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
         (esse :john
               grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 2 :pos-y 2}
@@ -126,4 +132,4 @@
 (s/def ::height number?)
 
 (comment
-  (o/query-all @world* ::spritesheet/spritesheet))
+  (o/query-all @world* ::asset/to-load))
