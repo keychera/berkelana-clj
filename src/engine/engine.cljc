@@ -8,12 +8,14 @@
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.transforms :as t]
+   [rules.asset.image :as image]
+   [rules.asset.tiled :as tiled]
    [rules.dev.dev-only :as dev-only]
    [rules.shader :as shader]
-   [rules.time :as time]
-   [rules.asset.image :as image]))
+   [rules.time :as time]))
 
 (defn compile-all [game world*]
+  (tiled/load-tiled-map game tiled/tiled-map-koalio)
   (shader/load-shader game world*)
   (image/load-asset game world*))
 
@@ -71,6 +73,7 @@
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))
+          (tiled/render-tiled-map game game-width game-height)
           (render-sprites-esses game world game-width game-height)
           (shader/render-shader-esses game world game-width game-height)))
       (catch #?(:clj Exception :cljs js/Error) err
