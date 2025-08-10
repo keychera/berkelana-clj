@@ -96,17 +96,17 @@
 
 
 
-(defn load-shader [game wordl*]
-  (doseq [{:keys [esse-id shader-fn]} (o/query-all @wordl* ::load-shader)]
+(defn load-shader [game world*]
+  (doseq [{:keys [esse-id shader-fn]} (o/query-all @world* ::load-shader)]
     (println "loading shader for" esse-id)
-    (swap! wordl* #(o/insert % esse-id ::loading? true))
+    (swap! world* #(o/insert % esse-id ::loading? true))
     (try (let [compiled-shader (c/compile game (shader-fn game))]
-           (swap! wordl* #(-> %
+           (swap! world* #(-> %
                                 (o/retract esse-id ::loading?)
                                 (o/insert esse-id ::compiled-shader compiled-shader)
                                 (o/fire-rules))))
          (catch #?(:clj Exception :cljs js/Error) err ;; maybe devonly
-           (swap! wordl* #(-> % (o/retract esse-id ::loading?) (o/fire-rules)))
+           (swap! world* #(-> % (o/retract esse-id ::loading?) (o/fire-rules)))
            (throw err)))))
 
 (defn render-shader-esses [game world game-width game-height]
