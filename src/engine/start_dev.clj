@@ -2,7 +2,7 @@
   (:require [engine.start :as start]
             [clojure.spec.test.alpha :as st]
             [play-cljc.gl.core :as pc])
-  (:import (imgui Hello)))
+  (:import (gui Hello)))
 
 (defn start []
   (st/instrument)

@@ -24,7 +24,11 @@
         org.lwjgl/lwjgl$natives-windows {:mvn/version "3.3.1"}
         org.lwjgl/lwjgl-glfw$natives-windows {:mvn/version "3.3.1"}
         org.lwjgl/lwjgl-opengl$natives-windows {:mvn/version "3.3.1"}
-        org.lwjgl/lwjgl-stb$natives-windows {:mvn/version "3.3.1"}}
+        org.lwjgl/lwjgl-stb$natives-windows {:mvn/version "3.3.1"}
+        io.github.spair/imgui-java-app {:mvn/version "1.89.0"}
+        io.github.spair/imgui-java-binding {:mvn/version "1.89.0"}
+        io.github.spair/imgui-java-lwjgl3 {:mvn/version "1.89.0"}
+        io.github.spair/imgui-java-natives-windows {:mvn/version "1.89.0"}}
  :aliases {:shadow-cljs {:extra-deps {thheller/shadow-cljs {:mvn/version "3.1.7"}
                                       org.mentat/leva.cljs {:mvn/version "0.3.0"}}}
            :native {:extra-deps {cheshire/cheshire {:mvn/version "6.0.0"}}

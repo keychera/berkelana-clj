@@ -1,37 +1,35 @@
 (ns build
-  (:require
-   [clojure.edn :as edn]
-   [clojure.java.io :as io]
-   [clojure.tools.build.api :as b])
-  (:import
-   [java.io PushbackReader]))
+  (:require 
+   [clojure.tools.build.api :as b]))
 
 (def game 'berkelana-clj)
 (def version (format "0.1.%s" (b/git-count-revs nil)))
 (def class-dir "target/classes")
 (def jar-file (format "target/%s-%s.jar" (name game) version))
 
-(def deps-edn (edn/read (PushbackReader. (io/reader "deps.edn"))))
 (def basis (delay (b/create-basis {:project "deps.edn"})))
 
 (defn clean [& _]
+  (println "cleaning target...")
   (b/delete {:path "target"}))
 
 (defn compile-java [& _]
-  (b/delete {:path "target"})
+  (clean)
+  (println "compiling java...")
   (b/javac {:src-dirs ["java"]
-            :class-dir class-dir}))
+            :class-dir class-dir
+            :basis @basis}))
 
-(defn native [& _]
+(defn desktop [& _]
   (compile-java)
-  (println "what")
+  (println "running desktop game...")
   (let [cmd (b/java-command {:basis @basis
                              :main  'clojure.main
                              :main-args ["-m" "engine.start-dev"]})]
     (b/process cmd)))
 
 (defn jar [& _]
-  (compile nil)
+  (compile-java)
   (b/write-pom {:class-dir class-dir
                 :lib game
                 :version version
