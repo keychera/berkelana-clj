@@ -13,7 +13,7 @@
    [assets.asset :as asset]
    [odoyle.rules :as o]))
 
-(defonce world-map-tmx
+(def world-map-tmx
   (edn/read-string (read-tiled-map-on-compile "tiled143/world.tmx")))
 
 (s/def ::tilesets-loaded? boolean?)
@@ -101,7 +101,6 @@
                  (update-in [(:firstgid tile) :i] inc))))
          firstgid->compiled-entity
          (map vector (:tiles tiled-map) (:entities tiled-map)))]
-    (println firstgid->instanced-entity)
     (swap! asset/db*
            #(-> %
                 (assoc asset-id {::tiled-map (-> tiled-map
