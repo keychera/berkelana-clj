@@ -118,8 +118,6 @@
      :then
      (let [to-load     (o/query-all session ::tilesets-to-load)
            all-loaded? (reduce #(and (:loaded? %1) (:loaded? %2)) to-load)]
-       (println "all-loaded?" all-loaded?)
-       (println "loading progress" to-load)
        (when all-loaded?
          (s-> session
               (o/retract tileset-name ::tilesets-loaded?)
@@ -144,7 +142,6 @@
                          sp/NONE] parsed-tmx)
              (into [] (comp (map first)
                             (map (fn [[firstgid tileset img]]
-                                   (println firstgid tileset img)
                                    (merge firstgid
                                           (update tileset :name #(str asset-id "." %))
                                           {:image (update img :source #(str home-path "/" %))}))))))
