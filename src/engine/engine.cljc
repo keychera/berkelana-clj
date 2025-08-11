@@ -16,7 +16,6 @@
    [rules.time :as time]))
 
 (defn compile-all [game world*]
-  (tiled/load-tiled-map game tiled/tiled-map-koalio)
   (shader/load-shader game world*)
   (asset/load-asset game world*))
 
@@ -43,8 +42,8 @@
             frame-y (quot frame-index frames-per-row)
             crop-x (* frame-x frame-width)
             crop-y (* frame-y frame-height)
-            scale 2]
-        (c/render game
+            scale 4]
+        (c/render game 
                   (-> image
                       (t/project game-width game-height)
                       (t/translate x y)

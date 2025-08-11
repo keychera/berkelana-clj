@@ -117,7 +117,10 @@
         (cond-> init-only?
           (-> (asset :asset/char0
                      #::asset{:img-to-load "char0.png" :type ::asset/spritesheet}
-                     #::spritesheet{:frame-width 32 :frame-height 32})))
+                     #::spritesheet{:frame-width 32 :frame-height 32})
+              (asset :asset/worldmap
+                     #::asset{:type ::asset/tiledmap}
+                     #::tiled{:parsed-tmx tiled/world-map-tmx})))
         ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
         (esse :john
               grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 2 :pos-y 2}
@@ -132,4 +135,4 @@
 (s/def ::height number?)
 
 (comment
-  (o/query-all @world* ::asset/to-load))
+  (o/query-all @world* ::tiled/tilesets-to-load))

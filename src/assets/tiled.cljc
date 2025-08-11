@@ -1,7 +1,7 @@
 (ns assets.tiled
   (:require
-   #?(:clj [engine.macros :refer [vars->map insert! read-tiled-map-on-compile]]
-      :cljs [engine.macros :refer-macros [vars->map insert! read-tiled-map-on-compile]])
+   #?(:clj [engine.macros :refer [vars->map s-> read-tiled-map-on-compile]]
+      :cljs [engine.macros :refer-macros [vars->map s-> read-tiled-map-on-compile]])
    [clojure.edn :as edn]
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as sp]
@@ -13,96 +13,125 @@
    [assets.asset :as asset]
    [odoyle.rules :as o]))
 
-(defonce world-map
+(defonce world-map-tmx
   (edn/read-string (read-tiled-map-on-compile "tiled143/world.tmx")))
 
-;; from https://github.com/oakes/play-cljc-examples super-koalio, the world we made above have tsx files that need parsing effort
-(defonce tiled-map-koalio
-  (edn/read-string (read-tiled-map-on-compile "berkelana-tiled/level1.tmx")))
+(s/def ::tilesets-loaded? boolean?)
+(s/def ::for keyword?)
+(s/def ::game-state map?)
 
-(s/def ::tiled-map some?)
-(s/def ::entity some?)
+(let [{:keys [layers map-width firstgids]}
+      (-> (get @asset/db* :asset/worldmap)
+          (dissoc 1) (dissoc 17) (dissoc :parsed-tmx))]
+  [(keys layers) map-width firstgids])
+
+;; gids is sorted descendingly
+(defn find-firstgid [id firstgids]
+  (reduce
+   (fn [id v]
+     (if (< id v) id (reduced v)))
+   id firstgids))
+
+(defn load-tile-instances [game asset-id]
+  (let [asset-data (get @asset/db* asset-id)
+        firstgid->tileset (:firstgid->tileset asset-data)
+
+        firstgid->tileset
+        (update-vals
+         firstgid->tileset
+         (fn [{:keys [tileheight tilewidth entity]
+               :as   tileset}]
+           (let [image       (:image tileset)
+                 tiles-vert  (/ (:height image) tileheight)
+                 tiles-horiz (/ (:width image) tilewidth)
+                 images      (vec
+                              (for [y (range tiles-vert)
+                                    x (range tiles-horiz)]
+                                (t/crop entity
+                                        (* x tilewidth)
+                                        (* y tileheight)
+                                        (- tilewidth 1)
+                                        (- tileheight 1))))]
+             (assoc tileset :images images))))
+
+        {:keys [layers map-width map-height firstgids]} asset-data
+
+        tiled-map
+        (reduce-kv
+         (fn [layers* layer-name layer]
+           (reduce
+            (fn [m i]
+              (let [x        (mod i map-width)
+                    y        (int (/ i map-width))
+                    gid      (nth layer i)
+                    firstgid (find-firstgid gid firstgids)
+                    localid  (- gid firstgid)
+                    tileset  (get firstgid->tileset firstgid)
+                    tile-map (when (>= gid 1) {:layer    layer-name
+                                               :tile-x   x
+                                               :tile-y   y
+                                               :firstgid firstgid
+                                               :localid localid})]
+                (cond-> m
+                  true
+                  (assoc-in [:layers layer-name x y] tile-map)
+                  tile-map
+                  (update :tiles conj tile-map)
+                  tile-map
+                  (update :entities conj (t/translate (nth (:images tileset) localid) x y)))))
+            layers*
+            (range (count layer))))
+         {:layers   {}
+          :tiles    []
+          :entities []}
+         layers)
+
+        firstgid->compiled-entity
+        (update-vals
+         firstgid->tileset
+         (fn [{:keys [entity]}]
+           {:i 0 :entity (c/compile game (instances/->instanced-entity entity))}))
+
+        firstgid->instanced-entity
+        (reduce
+         (fn [acc [tile uncompiled-entity]]
+           (let [i (get-in acc [(:firstgid tile) :i])]
+             (-> acc
+                 (update-in [(:firstgid tile) :entity] #(instances/assoc % i uncompiled-entity))
+                 (update-in [(:firstgid tile) :i] inc))))
+         firstgid->compiled-entity
+         (map vector (:tiles tiled-map) (:entities tiled-map)))]
+    (println firstgid->instanced-entity)
+    (swap! asset/db*
+           #(-> %
+                (assoc asset-id {::tiled-map (-> tiled-map
+                                                 (dissoc :entities)
+                                                 (merge (vars->map map-width map-height)))
+                                 ::firstgid->entity firstgid->instanced-entity})))))
 
 (def rules
   (o/ruleset
    {::tilesets-to-load
     [:what
      [tileset-name ::tilesets-loaded? loaded?]
+     [tileset-name ::for asset-id]
+     [tileset-name ::game-state passed-game] ;; feels hacky, we definitely use rules engine where it's not supposed to be used
      :then
      (let [to-load     (o/query-all session ::tilesets-to-load)
-           all-loaded? (reduce #(and %1 %2) to-load)]
+           all-loaded? (reduce #(and (:loaded? %1) (:loaded? %2)) to-load)]
+       (println "all-loaded?" all-loaded?)
        (println "loading progress" to-load)
        (when all-loaded?
-         (insert! ::tilesets-to-load ::asset/loaded? match)))]
-    
-    ::loaded?
-    [:what
-     [asset-id ::asset/loaded? true]]}))
-
-(def map* (atom {}))
-
-(defn load-tiled-map [game parsed]
-  (let [map-home (:home-path parsed)
-        map-width (-> parsed :attrs :width)
-        map-height (-> parsed :attrs :height)
-        tileset (first (filter #(= :tileset (:tag %)) (:content parsed)))
-        image (first (filter #(= :image (:tag %)) (:content tileset)))
-        {{:keys [tilewidth tileheight]} :attrs} tileset
-        layers (->> parsed :content
-                    (filter #(= :layer (:tag %)))
-                    (map #(vector
-                           (-> % :attrs :name)
-                           (-> % :content first :content first)))
-                    (into {}))]
-    (println "loading tiled-map from" (:asset-path parsed))
-    (utils/get-image (str map-home "/" (-> image :attrs :source))
-                     (fn [{:keys [data width height]}]
-                       (let [entity (e2d/->image-entity game data width height)
-                             tiles-vert (/ height tileheight)
-                             tiles-horiz (/ width tilewidth)
-                             images (vec
-                                     (for [y (range tiles-vert)
-                                           x (range tiles-horiz)]
-                                       (t/crop entity
-                                               (* x tilewidth)
-                                               (* y tileheight)
-                                               (- tilewidth 1)
-                                               (- tileheight 1))))
-                             {:keys [layers tiles entities]}
-                             (reduce
-                              (fn [m layer-name]
-                                (let [layer (get layers layer-name)]
-                                  (reduce
-                                   (fn [m i]
-                                     (let [x (mod i map-width)
-                                           y (int (/ i map-width))
-                                           image-id (dec (nth layer i))
-                                           tile-map (when (>= image-id 0)
-                                                      {:layer layer-name :tile-x x :tile-y y})]
-                                       (cond-> m
-                                         true
-                                         (assoc-in [:layers layer-name x y] tile-map)
-                                         tile-map
-                                         (update :tiles conj tile-map)
-                                         tile-map
-                                         (update :entities conj
-                                                 (t/translate (nth images image-id) x y)))))
-                                   m
-                                   (range (count layer)))))
-                              {:layers {} :tiles [] :entities []}
-                              ["background" "walls"])
-                             entity (instances/->instanced-entity entity)
-                             entity (c/compile game entity)
-                             entity (reduce-kv instances/assoc entity entities)]
-                         (swap! map* #(-> % (assoc ::tiled-map {:layers layers
-                                                                :tiles tiles
-                                                                :map-width map-width
-                                                                :map-height map-height}
-                                                   ::entity entity))))))))
+         (s-> session
+              (o/retract tileset-name ::tilesets-loaded?)
+              (o/retract tileset-name ::for)
+              (o/retract tileset-name ::game-state)
+              (o/insert asset-id ::asset/loaded? true))
+         (load-tile-instances passed-game asset-id)))]}))
 
 (defmethod asset/process-asset ::asset/tiledmap
-  [game world* {:keys [asset-id asset-type parsed-tmx]}]
-  (let [asset-path (:asset-path parsed-tmx)
+  [game world* asset-id {::keys [parsed-tmx]}]
+  (let [home-path (:home-path parsed-tmx)
         map-width (-> parsed-tmx :attrs :width)
         map-height (-> parsed-tmx :attrs :height)
         filter-tileset (sp/path [:content (sp/filterer #(= :tileset (:tag %)))])
@@ -115,38 +144,46 @@
                                       [:content sp/FIRST filter-image sp/ALL :attrs]))
                          sp/NONE] parsed-tmx)
              (into [] (comp (map first)
-                            (map (fn [firstgid tileset img]
-                                   {:tileset (merge firstgid (update tileset :name #(str asset-id "." %)))
-                                    :image img})))))
+                            (map (fn [[firstgid tileset img]]
+                                   (println firstgid tileset img)
+                                   (merge firstgid
+                                          (update tileset :name #(str asset-id "." %))
+                                          {:image (update img :source #(str home-path "/" %))}))))))
         layers (into {}
                      (comp (filter #(= :layer (:tag %)))
                            (map #(vector
                                   (-> % :attrs :name)
                                   (-> % :content first :content first))))
                      (:content parsed-tmx))]
-
-    (swap! world* #(reduce (fn [w t] (o/insert w (:name t) ::tilesets-loaded? false)) % tilesets))
-    (swap! asset/db* assoc asset-id (vars->map layers map-width map-height))
+    (swap! world*
+           #(reduce (fn [w t]
+                      (-> w
+                          (o/insert (:name t) ::tilesets-loaded? false)
+                          (o/insert (:name t) ::game-state game)
+                          (o/insert (:name t) ::for asset-id))) % tilesets))
+    (swap! asset/db*
+           (fn [db] (assoc db asset-id (assoc (vars->map layers map-width map-height)
+                                              :firstgids (->>  tilesets (mapv :firstgid) (sort >))))))
 
     (doseq [tileset tilesets]
       (utils/get-image
        (-> tileset :image :source)
        (fn [{:keys [data width height]}]
          (let [image-entity (e2d/->image-entity game data width height)
-               image-entity (c/compile game image-entity)
-               loaded-image (assoc image-entity :width width :height height :asset-type asset-type
-                                   :tileset tileset)]
-           (println "loaded spritesheet asset from" asset-path)
-           (swap! asset/db* assoc-in [asset-id (:name tileset)] loaded-image)
-           (swap! world* #(-> % (o/insert (:name tileset) ::tilesets-loaded? true)))))))))
-
+               loaded-image (assoc image-entity :width width :height height)
+               tileset      (assoc tileset :entity loaded-image)]
+           (println "loaded tileset asset from" (-> tileset :image :source))
+           (swap! asset/db* #(-> %  (assoc-in [asset-id :firstgid->tileset (:firstgid tileset)] tileset)))
+           (swap! world* #(-> %
+                              (o/insert (:name tileset) ::tilesets-loaded? true)
+                              (o/fire-rules)))))))))
 
 (defn render-tiled-map [game game-width game-height]
-  (let [{::keys [:assets.tiled/entity :assets.tiled/tiled-map]} @map*
+  (let [{:keys [::firstgid->entity ::tiled-map]} (get @asset/db* :asset/worldmap)
         {:keys [map-height]} tiled-map
         scaled-tile-size (/ game-height map-height)]
     ;; render the tiled map
-    (when entity
-      (c/render game (-> entity
+    (doseq [[_ entity] firstgid->entity]
+      (c/render game (-> (:entity entity)
                          (t/project game-width game-height)
                          (t/scale scaled-tile-size scaled-tile-size))))))
