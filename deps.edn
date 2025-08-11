@@ -1,4 +1,4 @@
-{:paths ["src" "resources"]
+{:paths ["src" "resources" "target/classes"]
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}
         play-cljc/play-cljc {:mvn/version "0.9.6"}
         iglu/iglu {:mvn/version "0.10.2"}
@@ -28,4 +28,6 @@
  :aliases {:shadow-cljs {:extra-deps {thheller/shadow-cljs {:mvn/version "3.1.7"}
                                       org.mentat/leva.cljs {:mvn/version "0.3.0"}}}
            :native {:extra-deps {cheshire/cheshire {:mvn/version "6.0.0"}}
-                    :main-opts ["native.clj"]}}}
+                    :main-opts ["-m" "engine.start-dev"]}
+           :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.10" :git/sha "deedd62"}}
+                   :ns-default build}}}
