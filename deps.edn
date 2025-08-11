@@ -25,7 +25,6 @@
         org.lwjgl/lwjgl-glfw$natives-windows {:mvn/version "3.3.1"}
         org.lwjgl/lwjgl-opengl$natives-windows {:mvn/version "3.3.1"}
         org.lwjgl/lwjgl-stb$natives-windows {:mvn/version "3.3.1"}
-        io.github.spair/imgui-java-app {:mvn/version "1.89.0"}
         io.github.spair/imgui-java-binding {:mvn/version "1.89.0"}
         io.github.spair/imgui-java-lwjgl3 {:mvn/version "1.89.0"}
         io.github.spair/imgui-java-natives-windows {:mvn/version "1.89.0"}}

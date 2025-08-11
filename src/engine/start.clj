@@ -148,25 +148,32 @@
       (->Window window))
     (throw (Exception. "Failed to create window"))))
 
-(defn start [game window]
-  (let [handle (:handle window)
-        game (assoc game :delta-time 0 :total-time (* (GLFW/glfwGetTime) 1000))]
-    (GLFW/glfwShowWindow handle)
-    (engine/init game)
-    (listen-for-events window)
-    (loop [game game]
-      (when-not (GLFW/glfwWindowShouldClose handle) 
-        (let [ts (* (GLFW/glfwGetTime) 1000)
-              game (assoc game
-                          :delta-time (- ts (:total-time game))
-                          :total-time ts)
-              game (on-tick window game)]
-          (GLFW/glfwSwapBuffers handle)
-          (GLFW/glfwPollEvents)
-          (recur game))))
-    (Callbacks/glfwFreeCallbacks handle)
-    (GLFW/glfwDestroyWindow handle)
-    (GLFW/glfwTerminate)))
+(defn start
+  ([game window] (start game window nil))
+  ([game window {::keys [init-fn frame-fn destroy-fn]}]
+   (let [handle (:handle window)
+         game (assoc game :delta-time 0 :total-time (* (GLFW/glfwGetTime) 1000))]
+     (GLFW/glfwShowWindow handle)
+     (engine/init game)
+     (listen-for-events window)
+     (when init-fn (init-fn window))
+     (try
+       (loop [game game]
+         (when-not (GLFW/glfwWindowShouldClose handle)
+           (let [ts (* (GLFW/glfwGetTime) 1000)
+                 game (assoc game
+                             :delta-time (- ts (:total-time game))
+                             :total-time ts)
+                 game (on-tick window game)]
+             (when frame-fn (frame-fn))
+             (GLFW/glfwSwapBuffers handle)
+             (GLFW/glfwPollEvents)
+             (recur game))))
+       (finally
+         (when destroy-fn (destroy-fn))
+         (Callbacks/glfwFreeCallbacks handle)
+         (GLFW/glfwDestroyWindow handle)
+         (GLFW/glfwTerminate))))))
 
 (defn -main [& args]
   (let [window (->window)]
