@@ -68,6 +68,7 @@ devs:
         ☐ make fps counter in java side
 
     ☐ try vybes and maybe flecs if we can incorporate rules engine or our 2d stuff (https://github.com/pfeodrippe/vybe)
+    ☐ that spritesheet file is just images with metadata
 
 upstream:
     ☐ play-cljc shader compile error when inserting uniform that is not declared inside shader

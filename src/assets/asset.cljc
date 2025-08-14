@@ -12,8 +12,6 @@
 (s/def ::loaded? boolean?)
 (defonce db* (atom {}))
 
-@db*
-
 (def rules
   (o/ruleset
    {::to-load
