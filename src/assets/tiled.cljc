@@ -175,11 +175,11 @@
                               (o/fire-rules)))))))))
 
 (defn render-tiled-map [game game-width game-height]
-  (let [{:keys [::firstgid->entity ::tiled-map]} (get @asset/db* :asset/worldmap)
-        {:keys [map-height]} tiled-map
-        scaled-tile-size (/ game-height map-height)]
+  (let [{:keys [::firstgid->entity]} (get @asset/db* :asset/worldmap)
+        scaled-tile-size 64]
     ;; render the tiled map
-    (doseq [[_ entity] firstgid->entity]
+    (doseq [[_ entity] (->> firstgid->entity (sort-by (fn [[gid _v]] gid)))]
       (c/render game (-> (:entity entity)
                          (t/project game-width game-height)
+                         (t/translate 32 32)
                          (t/scale scaled-tile-size scaled-tile-size))))))

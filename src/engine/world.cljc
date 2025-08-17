@@ -91,7 +91,7 @@
 
 (defn asset
   [session asset-id & maps]
-  (swap! asset/db* assoc asset-id (apply deep-merge maps)) 
+  (swap! asset/db* assoc asset-id (apply deep-merge maps))
   (o/insert session asset-id ::asset/loaded? false))
 
 (defn init-world [session]
@@ -117,16 +117,15 @@
         (cond-> init-only?
           (-> (asset :asset/char0
                      #::asset{:img-to-load "char0.png" :type ::asset/spritesheet}
-                     #::spritesheet{:frame-width 32 :frame-height 32}) ))
-        ;; if esse attributes are inserted partially it will not hit the rule and facts will be discarded
-        (asset :asset/worldmap
-               #::asset{:type ::asset/tiledmap}
-               #::tiled{:parsed-tmx tiled/world-map-tmx})
-        (esse :john
-              grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 2 :pos-y 2}
-              #::esse{::shader/shader-to-load shader/->hati :x 0 :y 0})
+                     #::spritesheet{:frame-width 32 :frame-height 32})
+              (asset :asset/worldmap
+                     #::asset{:type ::asset/tiledmap}
+                     #::tiled{:parsed-tmx tiled/world-map-tmx})))
+        #_(esse :john
+                grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 2 :pos-y 2}
+                #::esse{::shader/shader-to-load shader/->hati :x 0 :y 0})
         (esse :ubim
-              grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 4 :pos-y 4}
+              grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 2 :pos-y 4}
               #::esse{:sprite-from-asset :asset/char0
                       :x 0 :y 0 :frame-index 0 :anim-tick 0 :anim-elapsed-ms 0}))))
 
