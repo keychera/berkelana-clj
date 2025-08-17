@@ -67,11 +67,14 @@
                     firstgid (find-firstgid gid firstgids)
                     localid  (- gid firstgid)
                     tileset  (get firstgid->tileset firstgid)
-                    tile-map (when (>= gid 1) {:layer    layer-name
-                                               :tile-x   x
-                                               :tile-y   y
-                                               :firstgid firstgid
-                                               :localid localid})]
+                    props    (:tile-props tileset)
+                    tile-map (when (>= gid 1)
+                               (merge {:layer    layer-name
+                                       :tile-x   x
+                                       :tile-y   y
+                                       :firstgid firstgid
+                                       :localid  localid}
+                                      (get props localid)))]
                 (cond-> m
                   true
                   (assoc-in [:layers layer-name x y] tile-map)
@@ -126,25 +129,41 @@
               (o/insert asset-id ::asset/loaded? true))
          (load-tile-instances passed-game asset-id)))]}))
 
+(defn parse-value-type [{:keys [value type]}]
+  (case type
+    "bool" (= value "true")
+    value))
+
+(defn handle-tile-props [tile-props]
+  (when (some? tile-props)
+    [(sp/select-one [:attrs :id] tile-props)
+     (let [props (sp/select [:content sp/ALL :content sp/ALL :attrs] tile-props)]
+       (into {}
+             (for [prop props]
+               [(keyword (:name prop)) (parse-value-type prop)])))]))
+
 (defmethod asset/process-asset ::asset/tiledmap
   [game world* asset-id {::keys [parsed-tmx]}]
-  (let [home-path (:home-path parsed-tmx)
-        map-width (-> parsed-tmx :attrs :width)
-        map-height (-> parsed-tmx :attrs :height)
+  (let [home-path      (:home-path parsed-tmx)
+        map-width      (-> parsed-tmx :attrs :width)
+        map-height     (-> parsed-tmx :attrs :height)
         filter-tileset (sp/path [:content (sp/filterer #(= :tileset (:tag %)))])
-        filter-image (sp/path [:content (sp/filterer #(= :image (:tag %)))])
+        filter-image   (sp/path [:content (sp/filterer #(= :image (:tag %)))])
+        filter-tile    (sp/path [:content (sp/filterer #(= :tile (:tag %)))])
         tilesets
         (->> (sp/select [filter-tileset sp/ALL
                          (sp/collect (sp/multi-path
                                       [:attrs (sp/view #(select-keys % [:firstgid]))]
                                       [:content sp/FIRST :attrs]
-                                      [:content sp/FIRST filter-image sp/ALL :attrs]))
+                                      [:content sp/FIRST filter-image sp/ALL :attrs]
+                                      [:content sp/ALL filter-tile sp/ALL]))
                          sp/NONE] parsed-tmx)
              (into [] (comp (map first)
-                            (map (fn [[firstgid tileset img]]
+                            (map (fn [[firstgid tileset img & tile-props]]
                                    (merge firstgid
                                           (update tileset :name #(str asset-id "." %))
-                                          {:image (update img :source #(str home-path "/" %))}))))))
+                                          {:image (update img :source #(str home-path "/" %))
+                                           :tile-props (into {} (map handle-tile-props) tile-props)}))))))
         layers (into {}
                      (comp (filter #(= :layer (:tag %)))
                            (map #(vector
@@ -159,7 +178,7 @@
                           (o/insert (:name t) ::for asset-id))) % tilesets))
     (swap! asset/db*
            (fn [db] (assoc db asset-id (assoc (vars->map layers map-width map-height)
-                                              :firstgids (->>  tilesets (mapv :firstgid) (sort >))))))
+                                              :firstgids (->> tilesets (mapv :firstgid) (sort >))))))
 
     (doseq [tileset tilesets]
       (utils/get-image
@@ -183,3 +202,17 @@
                          (t/project game-width game-height)
                          (t/translate 32 32)
                          (t/scale scaled-tile-size scaled-tile-size))))))
+
+
+(comment
+  (= (handle-tile-props
+      {:attrs {:id 48},
+       :content [{:attrs {},
+                  :content
+                  [{:attrs {:name "unwalkable", :type "bool", :value "true"}, :content (), :tag :property}],
+                  :tag :properties}],
+       :tag :tile})
+     [48 {:unwalkable true}])
+
+  (= (-> @asset/db* :asset/worldmap ::tiled-map :layers (get "Objects") (get 1) (get 3) :unwalkable)
+     true))
