@@ -50,6 +50,12 @@
       (swap! !fps-counter assoc :last-time now :frames 0 :fps frames)
       (swap! !fps-counter update :frames inc))))
 
+(defonce dev-atom*
+  (r/atom {:dev-value 0
+           :upper  {:a 1 :b 2 :c 3}
+           :center {:a 1 :b 2 :c 3}
+           :lower  {:a 1 :b 2 :c 3}}))
+
 (defn main-panel []
   [:<>
    [leva/Controls
@@ -58,6 +64,13 @@
      :schema {"fps graph" (leva/monitor (fn [] (:fps @!fps-counter)) {:graph true :interval 200})
               :fps        {:order 1}
               :last-time  {:render (constantly false)}}}]
+   [leva/Controls
+    {:folder {:name "Dev"}
+     :atom   dev-atom*
+     :schema {:dev-value {:order 0} 
+              :upper     {:order 1}
+              :center    {:order 2}
+              :lower     {:order 3}}}]
    [leva/Controls
     {:folder {:name "State"}
      :atom   !panel-atom}]])
@@ -78,7 +91,10 @@
         (reset! !hud-visible true))
       (when @!hud-visible
         (dom/remove (dom/by-id hud/hud-id))
-        (reset! !hud-visible false)))))
+        (reset! !hud-visible false)))
+    (if-let [dev-value (first (o/query-all @world/world* ::dev-only/dev-value))]
+      (swap! dev-atom* assoc :dev-value (:value dev-value))
+      (swap! dev-atom* assoc :dev-value 0))))
 
 (defn dev-loop []
   (update-fps!)
