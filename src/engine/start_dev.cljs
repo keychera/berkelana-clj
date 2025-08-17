@@ -51,10 +51,10 @@
       (swap! !fps-counter update :frames inc))))
 
 (defonce dev-atom*
-  (r/atom {:dev-value 0
-           :upper  {:a 1 :b 2 :c 3}
-           :center {:a 1 :b 2 :c 3}
-           :lower  {:a 1 :b 2 :c 3}}))
+  (r/atom {:dev-value "raw value"
+           :upper     {:a 1 :b 2 :c 3}
+           :center    {:a 1 :b 2 :c 3}
+           :lower     {:a 1 :b 2 :c 3}}))
 
 (defn main-panel []
   [:<>
@@ -81,7 +81,7 @@
 
 (def !hud-visible (atom false))
 
-(defn listen-to-warning! []
+(defn listen-to-dev-events! []
   (let [warning (first (o/query-all @world/world* ::dev-only/warning))]
     (if (some? warning)
       (when (not @!hud-visible)
@@ -93,12 +93,12 @@
         (dom/remove (dom/by-id hud/hud-id))
         (reset! !hud-visible false)))
     (if-let [dev-value (first (o/query-all @world/world* ::dev-only/dev-value))]
-      (swap! dev-atom* assoc :dev-value (:value dev-value))
-      (swap! dev-atom* assoc :dev-value 0))))
+      (swap! dev-atom* assoc :dev-value (pr-str (:value dev-value)))
+      (swap! dev-atom* assoc :dev-value "raw value"))))
 
 (defn dev-loop []
   (update-fps!)
-  (listen-to-warning!))
+  (listen-to-dev-events!))
 
 (defonce dev-only
   (do (run-reagent)

@@ -1,9 +1,13 @@
 (ns rules.grid-move
   (:require
-   #?(:clj [engine.macros :refer [insert!]]
-      :cljs [engine.macros :refer-macros [insert!]])
+   #?(:clj [engine.macros :refer [insert! s->]]
+      :cljs [engine.macros :refer-macros [s-> insert!]])
+   [assets.asset :as asset]
+   [assets.tiled :as tiled]
    [clojure.spec.alpha :as s]
+   [com.rpl.specter :as sp]
    [odoyle.rules :as o]
+   [rules.dev.dev-only :as dev-only]
    [rules.input :as input]
    [rules.time :as time]))
 
@@ -19,6 +23,8 @@
 (s/def ::prev-x number?)
 (s/def ::prev-y number?)
 (s/def ::move-delay number?)
+
+(def sp->objects-layer (sp/path [:asset/worldmap ::tiled/tiled-map :layers "Objects"]))
 
 (def rules
   (o/ruleset
@@ -43,12 +49,14 @@
      (<= move-delay 0)
      (#{:left :right :up :down} keyname)
      :then
-     (insert! esse-id
-              {::prev-x pos-x
-               ::prev-y pos-y
-               ::pos-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
-               ::pos-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
-               ::move-delay move-duration})]
+     (let [next-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
+           next-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)]
+       (s-> session
+            (dev-only/send-dev-value
+             [next-x next-y (sp/select-one [sp->objects-layer next-x next-y :unwalkable] @asset/db*)])
+            (o/insert esse-id
+                      {::prev-x pos-x ::prev-y pos-y ::pos-x next-x ::pos-y next-y
+                       ::move-delay move-duration})))]
 
     ::move-delay
     [:what

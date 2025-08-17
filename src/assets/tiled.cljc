@@ -215,4 +215,5 @@
      [48 {:unwalkable true}])
 
   (= (-> @asset/db* :asset/worldmap ::tiled-map :layers (get "Objects") (get 1) (get 3) :unwalkable)
+     (sp/select-one [:asset/worldmap ::tiled-map :layers "Objects" 1 3 :unwalkable] @asset/db*)
      true))
