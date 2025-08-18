@@ -11,7 +11,6 @@
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as e]
-   [play-cljc.transforms :as t]
    [rules.camera :as camera]
    [rules.dev.dev-only :as dev-only]
    [rules.shader :as shader]
