@@ -11,7 +11,6 @@
    [play-cljc.gl.entities-2d :as entities-2d]
    [play-cljc.math :as m]
    [play-cljc.transforms :as t]
-   [rules.esse :as esse]
    [rules.pos2d :as pos2d]
    [rules.time :as time]))
 

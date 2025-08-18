@@ -5,7 +5,8 @@
    [assets.tiled :as tiled]
    [rules.esse :as esse :refer [asset esse]]
    [rules.grid-move :as grid-move]
-   [rules.pos2d :as pos2d]))
+   [rules.pos2d :as pos2d]
+   [rules.ubim :as ubim]))
 
 (defn init [session init-only?]
   (-> session
@@ -18,5 +19,5 @@
                    #::tiled{:parsed-tmx tiled/world-map-tmx})))
       (esse :ubim
             grid-move/default #::grid-move{:target-attr-x ::pos2d/x :target-attr-y ::pos2d/y :pos-x 2 :pos-y 4}
-            #::esse{:sprite-from-asset :asset/char0
-                    :x 0 :y 0 :frame-index 0 :anim-tick 0 :anim-elapsed-ms 0})))
+            #::pos2d{:x 0 :y 0}
+            #::ubim{:sprite-from-asset :asset/char0 :frame-index 0 :anim-tick 0 :anim-elapsed-ms 0})))
