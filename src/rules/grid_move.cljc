@@ -25,6 +25,8 @@
 (s/def ::move-delay number?)
 
 (def sp->objects-layer (sp/path [:asset/worldmap ::tiled/tiled-map :layers "Objects"]))
+(def sp->map-dimension (sp/multi-path [:asset/worldmap ::tiled/tiled-map :map-width]
+                                      [:asset/worldmap ::tiled/tiled-map :map-height]))
 
 (def rules
   (o/ruleset
@@ -50,13 +52,17 @@
      (#{:left :right :up :down} keyname)
      :then
      (let [next-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
-           next-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)]
-       (s-> session
-            (dev-only/send-dev-value
-             [next-x next-y (sp/select-one [sp->objects-layer next-x next-y :unwalkable] @asset/db*)])
-            (o/insert esse-id
-                      {::prev-x pos-x ::prev-y pos-y ::pos-x next-x ::pos-y next-y
-                       ::move-delay move-duration})))]
+           next-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
+           unwalkable? (sp/select-one [sp->objects-layer next-x next-y :unwalkable] @asset/db*)
+           [map-width map-height] (sp/select sp->map-dimension @asset/db*)
+           out-of-map? (or (< next-x 0) (< next-y 0) (> next-x (dec map-width)) (> next-y (dec map-height)))]
+       (when (and (not unwalkable?) (not out-of-map?))
+         (s-> session
+              (dev-only/send-dev-value
+               [next-x next-y (sp/select-one [sp->objects-layer next-x next-y :unwalkable] @asset/db*)])
+              (o/insert esse-id
+                        {::prev-x pos-x ::prev-y pos-y ::pos-x next-x ::pos-y next-y
+                         ::move-delay move-duration}))))]
 
     ::move-delay
     [:what
@@ -86,3 +92,4 @@
        (insert! esse-id
                 {attr-x (* grid x)
                  attr-y (* grid y)}))]}))
+
