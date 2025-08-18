@@ -8,6 +8,7 @@
    [engine.refresh :refer [*refresh?]]
    [engine.utils :as utils]
    [engine.world :as world]
+   [game.chapter1 :as chapter1]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.transforms :as t]
@@ -29,6 +30,7 @@
                  (o/insert ::world/window
                            {::world/width game-width
                             ::world/height game-height})
+                 (chapter1/init (nil? world))
                  (o/fire-rules))))
     (compile-all game world/world*)))
 
@@ -43,7 +45,7 @@
             crop-x (* frame-x frame-width)
             crop-y (* frame-y frame-height)
             scale 4]
-        (c/render game 
+        (c/render game
                   (-> image
                       (t/project game-width game-height)
                       (t/translate x y)

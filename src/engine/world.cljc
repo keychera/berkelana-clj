@@ -3,17 +3,17 @@
    #?(:cljs [rules.dev.leva-rules :as leva-rules])
    #?(:clj [engine.macros :refer [insert!]]
       :cljs [engine.macros :refer-macros [insert!]])
+   [assets.asset :as asset]
+   [assets.tiled :as tiled]
    [clojure.spec.alpha :as s]
    [odoyle.rules :as o]
-   [assets.asset :as asset]
-   [assets.spritesheet :as spritesheet]
    [rules.dev.dev-only :as dev-only]
    [rules.esse :as esse]
    [rules.grid-move :as grid-move]
    [rules.input :as input]
+   [rules.pos2d :as pos2d]
    [rules.shader :as shader]
-   [rules.time :as time]
-   [assets.tiled :as tiled]))
+   [rules.time :as time]))
 
 (defonce world* (atom nil))
 
@@ -72,27 +72,15 @@
 
     ::sprite-esse
     [:what
-     [esse-id ::esse/x x]
-     [esse-id ::esse/y y]
+     [esse-id ::pos2d/x x]
+     [esse-id ::pos2d/y y]
      [esse-id ::esse/frame-index frame-index]
      [esse-id ::esse/sprite-from-asset asset-id]
      [asset-id ::asset/loaded? true]]}))
 
 (defonce ^:devonly previous-rules (atom nil))
 
-(defn deep-merge [a & maps]
-  (if (map? a)
-    (apply merge-with deep-merge a maps)
-    (apply merge-with deep-merge maps)))
 
-(defn esse
-  [session esse-id & maps]
-  (o/insert session esse-id (apply deep-merge maps)))
-
-(defn asset
-  [session asset-id & maps]
-  (swap! asset/db* assoc asset-id (apply deep-merge maps))
-  (o/insert session asset-id ::asset/loaded? false))
 
 (defn init-world [session]
   (let [all-rules (concat rules
@@ -113,21 +101,7 @@
     (reset! previous-rules all-rules)
     (-> (->> all-rules
              (map #'rules-debugger-wrap-fn)
-             (reduce o/add-rule session))
-        (cond-> init-only?
-          (-> (asset :asset/char0
-                     #::asset{:img-to-load "char0.png" :type ::asset/spritesheet}
-                     #::spritesheet{:frame-width 32 :frame-height 32})
-              (asset :asset/worldmap
-                     #::asset{:type ::asset/tiledmap}
-                     #::tiled{:parsed-tmx tiled/world-map-tmx})))
-        #_(esse :john
-                grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 2 :pos-y 2}
-                #::esse{::shader/shader-to-load shader/->hati :x 0 :y 0})
-        (esse :ubim
-              grid-move/default #::grid-move{:target-attr-x ::esse/x :target-attr-y ::esse/y :pos-x 2 :pos-y 4}
-              #::esse{:sprite-from-asset :asset/char0
-                      :x 0 :y 0 :frame-index 0 :anim-tick 0 :anim-elapsed-ms 0}))))
+             (reduce o/add-rule session)))))
 
 ;; specs
 (s/def ::width number?)

@@ -17,8 +17,8 @@
                                  (.put barray)
                                  (.flip))
                  decoded-image (STBImage/stbi_load_from_memory
-                                 direct-buffer *width *height *components
-                                 STBImage/STBI_rgb_alpha)
+                                direct-buffer *width *height *components
+                                STBImage/STBI_rgb_alpha)
                  image {:data decoded-image
                         :width (.get *width)
                         :height (.get *height)}]
@@ -44,3 +44,8 @@
              [w h])
      :cljs [(-> game :context .-canvas .-clientWidth)
             (-> game :context .-canvas .-clientHeight)]))
+
+(defn deep-merge [a & maps]
+  (if (map? a)
+    (apply merge-with deep-merge a maps)
+    (apply merge-with deep-merge maps)))

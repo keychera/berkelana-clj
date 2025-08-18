@@ -6,12 +6,13 @@
       :cljs [play-cljc.macros-js :refer-macros [gl]])
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as specter]
-   [rules.esse :as esse]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as entities-2d]
    [play-cljc.math :as m]
    [play-cljc.transforms :as t]
+   [rules.esse :as esse]
+   [rules.pos2d :as pos2d]
    [rules.time :as time]))
 
 (def rules
@@ -29,8 +30,8 @@
 
     ::shader-esse
     [:what
-     [esse-id ::esse/x x]
-     [esse-id ::esse/y y]
+     [esse-id ::pos2d/x x]
+     [esse-id ::pos2d/y y]
      [esse-id ::compiled-shader compiled-shader]]
 
     ::shader-update
