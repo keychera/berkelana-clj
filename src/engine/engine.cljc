@@ -13,7 +13,9 @@
    [rules.dev.dev-only :as dev-only]
    [rules.shader :as shader]
    [rules.time :as time]
-   [rules.ubim :as ubim]))
+   [rules.ubim :as ubim]
+   [play-cljc.gl.entities-2d :as e]
+   [play-cljc.transforms :as t]))
 
 (defn compile-all [game world*]
   (shader/load-shader game world*)
@@ -37,6 +39,14 @@
   {:viewport {:x 0 :y 0 :width 0 :height 0}
    :clear {:color [(/ 0 255) (/ 0 255) (/ 0 255) 1.0] :depth 1}})
 
+(def camera
+  (let [scale 0.2]
+    (-> (e/->camera true)
+       (t/translate (- (* 500 scale) 64) (- (* 450 scale) 64))
+       (t/rotate Math/PI)
+       (t/scale scale scale))))
+;; SCROT but the last one is the first
+
 (defn tick [game]
   (if @*refresh?
     (try (println "calling (init game)")
@@ -56,8 +66,8 @@
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))
-          (tiled/render-tiled-map game game-width game-height)
-          (ubim/render game world game-width game-height)
+          (tiled/render-tiled-map game camera game-width game-height)
+          (ubim/render game world camera game-width game-height)
           (shader/render-shader-esses game world game-width game-height)))
       (catch #?(:clj Exception :cljs js/Error) err
         (swap! world/world* #(-> % (dev-only/warn (str "tick error " err))))

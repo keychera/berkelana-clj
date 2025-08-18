@@ -86,7 +86,7 @@
      [esse-id ::move-duration move-duration {:then false}]
      :then
      (let [t (- 1.0 (/ move-delay move-duration))
-           ease-fn #(Math/pow % 2) grid 64
+           ease-fn #(Math/pow % 2) grid 16
            x (+ sx (* (- px sx) (ease-fn t)))
            y (+ sy (* (- py sy) (ease-fn t)))]
        (insert! esse-id

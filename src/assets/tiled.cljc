@@ -52,7 +52,7 @@
                                         (* y tileheight)
                                         (- tilewidth 1)
                                         (- tileheight 1))))]
-             (assoc tileset :images images))))
+             (assoc tileset :images images :tile-size tilewidth)))) ;; assuming square tiles
 
         {:keys [layers map-width map-height firstgids]} asset-data
 
@@ -92,8 +92,10 @@
         firstgid->compiled-entity
         (update-vals
          firstgid->tileset
-         (fn [{:keys [entity]}]
-           {:i 0 :entity (c/compile game (instances/->instanced-entity entity))}))
+         #(-> %
+              (assoc :i 0)
+              (update :entity (fn [entity]
+                                (c/compile game (instances/->instanced-entity entity))))))
 
         firstgid->instanced-entity
         (reduce
@@ -193,16 +195,16 @@
                               (o/insert (:name tileset) ::tilesets-loaded? true)
                               (o/fire-rules)))))))))
 
-(defn render-tiled-map [game game-width game-height]
+(defn render-tiled-map [game camera game-width game-height]
   (let [{:keys [::firstgid->entity]} (get @asset/db* :asset/worldmap)
-        scaled-tile-size 64]
-    ;; render the tiled map
+        tile-size (-> firstgid->entity (get 1) :tile-size)]
     (doseq [[_ entity] (->> firstgid->entity (sort-by (fn [[gid _v]] gid)))]
       (c/render game (-> (:entity entity)
-                         (t/project game-width game-height)
-                         (t/translate 32 32)
-                         (t/scale scaled-tile-size scaled-tile-size))))))
-
+                         (t/project game-width game-height) 
+                         (t/invert camera)
+                         (t/translate 8 8)
+                         (t/scale tile-size tile-size))))))
+;; this is SCROT from below
 
 (comment
   (= (handle-tile-props

@@ -39,11 +39,11 @@
                  ::input/keydown
                  (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
                    {::frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)})
-                 
+
                  ::input/keyup
                  {::anim-elapsed-ms 0
                   ::frame-index (case keyname :down 1 :left 13 :right 25 :up 37 1)}
-                 
+
                  {})))]
 
     ::ubim-esse
@@ -55,7 +55,7 @@
      [asset-id ::asset/loaded? true]]}))
 
 
-(defn render [game world game-width game-height]
+(defn render [game world camera game-width game-height]
   (let [sprite-esses (o/query-all world ::ubim-esse)]
     (doseq [sprite-esse sprite-esses]
       (let [{:keys [x y asset-id frame-index]} sprite-esse
@@ -64,10 +64,10 @@
             frame-x (mod frame-index frames-per-row)
             frame-y (quot frame-index frames-per-row)
             crop-x (* frame-x frame-width)
-            crop-y (* frame-y frame-height)
-            scale 4]
+            crop-y (* frame-y frame-height)]
         (c/render game (-> image
+                           (t/crop crop-x crop-y frame-width frame-height)
                            (t/project game-width game-height)
+                           (t/invert camera)
                            (t/translate x y)
-                           (t/scale (* frame-width scale) (* frame-height scale))
-                           (t/crop crop-x crop-y frame-width frame-height)))))))
+                           (t/scale frame-width frame-height)))))))
