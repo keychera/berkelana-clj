@@ -4,7 +4,8 @@
    [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as pc]
-   [rules.input :as input])
+   [rules.input :as input]
+   [rules.window :as window])
   (:import
    [org.lwjgl.glfw
     Callbacks
@@ -66,9 +67,9 @@
 
 (defn on-char! [window codepoint])
 
-(defn on-resize! [window width height]
-  (swap! world/world* o/insert ::world/window
-         {::world/width width ::world/height height}))
+(defn on-resize! [_ width height]
+  (swap! world/world* 
+         (fn [w] (window/set-window w width height))))
 
 (defn on-scroll! [window xoffset yoffset])
 

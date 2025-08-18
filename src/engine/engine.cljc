@@ -10,12 +10,14 @@
    [game.chapter1 :as chapter1]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
+   [play-cljc.gl.entities-2d :as e]
+   [play-cljc.transforms :as t]
+   [rules.camera :as camera]
    [rules.dev.dev-only :as dev-only]
    [rules.shader :as shader]
    [rules.time :as time]
    [rules.ubim :as ubim]
-   [play-cljc.gl.entities-2d :as e]
-   [play-cljc.transforms :as t]))
+   [rules.window :as window]))
 
 (defn compile-all [game world*]
   (shader/load-shader game world*)
@@ -28,9 +30,7 @@
     (swap! world/world*
            (fn [world]
              (-> (world/init-world world)
-                 (o/insert ::world/window
-                           {::world/width game-width
-                            ::world/height game-height})
+                 (window/set-window game-width game-height)
                  (chapter1/init (nil? world))
                  (o/fire-rules))))
     (compile-all game world/world*)))
@@ -39,12 +39,7 @@
   {:viewport {:x 0 :y 0 :width 0 :height 0}
    :clear {:color [(/ 0 255) (/ 0 255) (/ 0 255) 1.0] :depth 1}})
 
-(def camera
-  (let [scale 0.2]
-    (-> (e/->camera true)
-       (t/translate (- (* 500 scale) 64) (- (* 450 scale) 64))
-       (t/rotate Math/PI)
-       (t/scale scale scale))))
+(def camera (e/->camera true))
 ;; SCROT but the last one is the first
 
 (defn tick [game]
@@ -62,7 +57,9 @@
                          #(-> %
                               (time/insert total-time delta-time)
                               o/fire-rules))
-            {game-width :width game-height :height} (first (o/query-all world ::world/window))]
+            {game-width :width game-height :height} (first (o/query-all world ::window/window))
+            {cam-fn :cam-fn}  (first (o/query-all world ::camera/camera-matrix))
+            camera  (cam-fn camera)]
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))

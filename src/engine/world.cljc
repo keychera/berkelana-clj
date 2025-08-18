@@ -3,14 +3,15 @@
    #?(:cljs [rules.dev.leva-rules :as leva-rules])
    [assets.asset :as asset]
    [assets.tiled :as tiled]
-   [clojure.spec.alpha :as s]
    [odoyle.rules :as o]
+   [rules.camera :as camera]
    [rules.dev.dev-only :as dev-only]
    [rules.grid-move :as grid-move]
    [rules.input :as input]
    [rules.shader :as shader]
    [rules.time :as time]
-   [rules.ubim :as ubim]))
+   [rules.ubim :as ubim]
+   [rules.window :as window]))
 
 (defonce world* (atom nil))
 
@@ -36,21 +37,11 @@
                   ;; (println :then-finally (:name rule))
                   (f session))}))
 
-(def rules
-  (o/ruleset
-   {::window
-    [:what
-     [::window ::width width]
-     [::window ::height height]]
-
-    }))
-
 (defonce ^:devonly previous-rules (atom nil))
 
-
-
 (defn init-world [session]
-  (let [all-rules (concat rules
+  (let [all-rules (concat window/rules
+                          camera/rules
                           time/rules
                           input/rules
                           asset/rules
@@ -71,9 +62,6 @@
              (map #'rules-debugger-wrap-fn)
              (reduce o/add-rule session)))))
 
-;; specs
-(s/def ::width number?)
-(s/def ::height number?)
 
 (comment
   (o/query-all @world* ::tiled/tilesets-to-load))

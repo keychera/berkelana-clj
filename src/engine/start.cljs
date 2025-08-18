@@ -5,7 +5,8 @@
    [goog.events :as events]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as pc]
-   [rules.input :as input]))
+   [rules.input :as input]
+   [rules.window :as window]))
 
 (defn game-loop
   ([game] (game-loop game nil))
@@ -64,8 +65,8 @@
         display-height context.canvas.clientHeight]
     (set! context.canvas.width display-width)
     (set! context.canvas.height display-height)
-    (swap! world/world* o/insert ::world/window
-           {::world/width display-width ::world/height display-height})))
+    (swap! world/world*
+           (fn [w] (window/set-window w display-width display-height)))))
 
 (defn ^:vibe listen-for-resize [context]
   (let [canvas context.canvas
