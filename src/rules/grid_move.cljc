@@ -22,6 +22,8 @@
 ; intermediates
 (s/def ::prev-x number?)
 (s/def ::prev-y number?)
+(s/def ::next-x number?)
+(s/def ::next-y number?)
 (s/def ::move-delay number?)
 
 (def sp->layers->props (sp/path [:asset/worldmap ::tiled/tiled-map :layers (sp/multi-path "Structures" "Interactables")]))
@@ -37,7 +39,7 @@
      :then
      (insert! esse-id {::prev-x 0 ::prev-y 0 ::move-delay 0})]
 
-    ::move-player
+    ::init-move-player
     [:what
      [esse-id ::target-attr-x attr-x]
      [esse-id ::target-attr-y attr-y]
@@ -46,22 +48,29 @@
      [esse-id ::pos-x pos-x {:then false}]
      [esse-id ::pos-y pos-y {:then false}]
      [esse-id ::move-delay move-delay {:then false}]
-     [esse-id ::move-duration move-duration {:then false}]
      :when
      (<= move-delay 0)
      (#{:left :right :up :down} keyname)
      :then
      (let [next-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
-           next-y (case keyname :up (dec pos-y) :down (inc pos-y) pos-y)
-           unwalkable? (sp/select-one [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] @asset/db*)
-           [map-width map-height] (sp/select sp->map-dimension @asset/db*)
-           out-of-map? (or (< next-x 0) (< next-y 0) (> next-x (dec map-width)) (> next-y (dec map-height)))]
-       (when (and (not unwalkable?) (not out-of-map?))
+           next-y (case keyname :up   (dec pos-y) :down  (inc pos-y) pos-y)
+           unwalkable? (sp/select-one [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] @asset/db*)]
+       (when (not unwalkable?)
          (s-> session
               (dev-only/send-dev-value [next-x next-y unwalkable?])
               (o/insert esse-id
-                        {::prev-x pos-x ::prev-y pos-y ::pos-x next-x ::pos-y next-y
-                         ::move-delay move-duration}))))]
+                        {::prev-x pos-x ::prev-y pos-y ::next-x next-x ::next-y next-y}))))]
+
+    ::check-map-boundary
+    [:what
+     [esse-id ::next-x next-x]
+     [esse-id ::next-y next-y]
+     [esse-id ::move-duration move-duration {:then false}]
+     :when
+     (let [[map-width map-height] (sp/select sp->map-dimension @asset/db*)]
+       (not (or (< next-x 0) (< next-y 0) (> next-x (dec map-width)) (> next-y (dec map-height)))))
+     :then
+     (s-> session (o/insert esse-id {::pos-x next-x ::pos-y next-y ::move-delay move-duration}))]
 
     ::move-delay
     [:what
