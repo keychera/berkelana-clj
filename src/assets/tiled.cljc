@@ -20,11 +20,6 @@
 (s/def ::for keyword?)
 (s/def ::game-state map?)
 
-(let [{:keys [layers map-width firstgids]}
-      (-> (get @asset/db* :asset/worldmap)
-          (dissoc 1) (dissoc 17) (dissoc :parsed-tmx))]
-  [(keys layers) map-width firstgids])
-
 ;; gids is sorted descendingly
 (defn find-firstgid [id firstgids]
   (reduce
@@ -134,6 +129,7 @@
 (defn parse-value-type [{:keys [value type]}]
   (case type
     "bool" (= value "true")
+    "int"  (#?(:clj Integer/parseInt :cljs js/parseInt) value)
     value))
 
 (defn handle-tile-props [tile-props]
@@ -143,6 +139,20 @@
        (into {}
              (for [prop props]
                [(keyword (:name prop)) (parse-value-type prop)])))]))
+
+;; we just learned about sp/transformed, maybe let's refactor everything with this later on
+(defn parse-objects-content [objects-content]
+  (sp/select [sp/ALL
+              (sp/transformed
+               (sp/collect
+                (sp/multi-path
+                 :attrs
+                 [:content sp/ALL #(= (:tag %) :properties) :content (sp/putval :properties)
+                  (sp/transformed
+                   (sp/transformed [sp/ALL] (fn [{prop :attrs}] [(keyword (:name prop)) (parse-value-type prop)]))
+                   (fn [e] (into {} e)))]))
+               (fn [[attrs props]] (conj attrs props)))]
+             objects-content))
 
 (defmethod asset/process-asset ::asset/tiledmap
   [game world* asset-id {::keys [parsed-tmx]}]
@@ -171,7 +181,13 @@
                            (map #(vector
                                   (-> % :attrs :name)
                                   (-> % :content first :content first))))
-                     (:content parsed-tmx))]
+                     (:content parsed-tmx))
+        objects (->> (sp/select [:content sp/ALL #(= (:tag %) :objectgroup)
+                                 (sp/transformed sp/STAY
+                                                 (fn [{{:keys [id name]} :attrs content :content}]
+                                                   [id {::name name ::objects (parse-objects-content content)}]))]
+                                world-map-tmx)
+                     (into {}))]
     (swap! world*
            #(reduce (fn [w t]
                       (-> w
@@ -179,7 +195,7 @@
                           (o/insert (:name t) ::game-state game)
                           (o/insert (:name t) ::for asset-id))) % tilesets))
     (swap! asset/db*
-           (fn [db] (assoc db asset-id (assoc (vars->map layers map-width map-height)
+           (fn [db] (assoc db asset-id (assoc (vars->map layers objects map-width map-height)
                                               :firstgids (->> tilesets (mapv :firstgid) (sort >))))))
 
     (doseq [tileset tilesets]
@@ -200,7 +216,7 @@
         tile-size (-> firstgid->entity (get 1) :tile-size)]
     (doseq [[_ entity] (->> firstgid->entity (sort-by (fn [[gid _v]] gid)))]
       (c/render game (-> (:entity entity)
-                         (t/project game-width game-height) 
+                         (t/project game-width game-height)
                          (t/invert camera)
                          (t/translate 8 8)
                          (t/scale tile-size tile-size))))))
@@ -218,4 +234,20 @@
 
   (= (-> @asset/db* :asset/worldmap ::tiled-map :layers (get "Objects") (get 1) (get 3) :unwalkable)
      (sp/select-one [:asset/worldmap ::tiled-map :layers "Objects" 1 3 :unwalkable] @asset/db*)
-     true))
+     true)
+
+  (let [objects [{:attrs {:gid 454, :height 16, :id 28, :name "Bucket", :width 16, :x 48, :y 96},
+                  :content [{:attrs {},
+                             :content [{:attrs {:name "money", :type "int", :value 5}, :content (), :tag :property}
+                                       {:attrs {:name "unwalkable", :type "bool", :value "false"}, :content (), :tag :property}],
+                             :tag :properties}],
+                  :tag :object}
+                 {:attrs {:gid 454, :height 16, :id 29, :name "Bucket", :width 16, :x 48, :y 96},
+                  :content [{:attrs {},
+                             :content [{:attrs {:name "money", :type "int", :value -5}, :content (), :tag :property}
+                                       {:attrs {:name "unwalkable", :type "bool", :value "true"}, :content (), :tag :property}],
+                             :tag :properties}],
+                  :tag :object}]]
+    (= (parse-objects-content objects)
+       [{:gid 454, :height 16, :id 28, :name "Bucket", :properties {:money 5, :unwalkable false}, :width 16, :x 48, :y 96}
+        {:gid 454, :height 16, :id 29, :name "Bucket", :properties {:money -5, :unwalkable true}, :width 16, :x 48, :y 96}])))
