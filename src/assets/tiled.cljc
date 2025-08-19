@@ -49,13 +49,13 @@
                                         (- tileheight 1))))]
              (assoc tileset :images images :tile-size tilewidth)))) ;; assuming square tiles
 
-        {:keys [layers map-width map-height firstgids]} asset-data
+        {:keys [layers objectgroup map-width map-height firstgids]} asset-data
 
         tiled-map
         (reduce-kv
-         (fn [layers* layer-name layer]
+         (fn [tiled-map' layer-name layer]
            (reduce
-            (fn [m i]
+            (fn [tiled-map'' i]
               (let [x        (mod i map-width)
                     y        (int (/ i map-width))
                     gid      (nth layer i)
@@ -63,26 +63,57 @@
                     localid  (- gid firstgid)
                     tileset  (get firstgid->tileset firstgid)
                     props    (:tile-props tileset)
-                    tile-map (when (>= gid 1)
+                    tile     (when (>= gid 1)
+                               {:layer    layer-name
+                                :tile-x   x
+                                :tile-y   y
+                                :firstgid firstgid
+                                :localid  localid
+                                ::props   (get props localid)})]
+                (cond-> tiled-map''
+                  true
+                  (assoc-in [:layers layer-name x y] tile)
+                  tile
+                  (update :tiles conj tile)
+                  tile
+                  (update :entities conj (t/translate (nth (:images tileset) localid) x y)))))
+            tiled-map'
+            (range (count layer))))
+         {:layers {} :tiles [] :entities []}
+         layers)
+
+        tiled-map
+        (reduce-kv
+         (fn [tiled-map' _id {::keys [layer-name objects]}]
+           (reduce
+            (fn [tiled-map'' object]
+              (let [tile-h   (:height object)
+                    _        (assert (= tile-h (:width object))
+                                     "assuming square tiles")
+                    x        (/ (:x object) tile-h)
+                    y        (dec (/ (:y object) tile-h)) ;; not sure why this needs decrement
+                    gid      (:gid object)
+                    firstgid (find-firstgid gid firstgids)
+                    localid  (- gid firstgid)
+                    tileset  (get firstgid->tileset firstgid)
+                    tile     (when (>= gid 1)
                                (merge {:layer    layer-name
                                        :tile-x   x
                                        :tile-y   y
                                        :firstgid firstgid
                                        :localid  localid}
-                                      (get props localid)))]
-                (cond-> m
+                                      object))]
+                (cond-> tiled-map''
                   true
-                  (assoc-in [:layers layer-name x y] tile-map)
-                  tile-map
-                  (update :tiles conj tile-map)
-                  tile-map
+                  (assoc-in [:layers layer-name x y] tile)
+                  tile
+                  (update :tiles conj tile)
+                  tile
                   (update :entities conj (t/translate (nth (:images tileset) localid) x y)))))
-            layers*
-            (range (count layer))))
-         {:layers   {}
-          :tiles    []
-          :entities []}
-         layers)
+            tiled-map'
+            objects))
+         tiled-map
+         objectgroup)
 
         firstgid->compiled-entity
         (update-vals
@@ -147,7 +178,7 @@
                (sp/collect
                 (sp/multi-path
                  :attrs
-                 [:content sp/ALL #(= (:tag %) :properties) :content (sp/putval :properties)
+                 [:content sp/ALL #(= (:tag %) :properties) :content (sp/putval ::props)
                   (sp/transformed
                    (sp/transformed [sp/ALL] (fn [{prop :attrs}] [(keyword (:name prop)) (parse-value-type prop)]))
                    (fn [e] (into {} e)))]))
@@ -182,12 +213,13 @@
                                   (-> % :attrs :name)
                                   (-> % :content first :content first))))
                      (:content parsed-tmx))
-        objects (->> (sp/select [:content sp/ALL #(= (:tag %) :objectgroup)
-                                 (sp/transformed sp/STAY
-                                                 (fn [{{:keys [id name]} :attrs content :content}]
-                                                   [id {::name name ::objects (parse-objects-content content)}]))]
-                                world-map-tmx)
-                     (into {}))]
+        objectgroup
+        (->> (sp/select [:content sp/ALL #(= (:tag %) :objectgroup)
+                         (sp/transformed sp/STAY
+                                         (fn [{{:keys [id name]} :attrs content :content}]
+                                           [id {::layer-name name ::objects (parse-objects-content content)}]))]
+                        parsed-tmx)
+             (into {}))]
     (swap! world*
            #(reduce (fn [w t]
                       (-> w
@@ -195,7 +227,7 @@
                           (o/insert (:name t) ::game-state game)
                           (o/insert (:name t) ::for asset-id))) % tilesets))
     (swap! asset/db*
-           (fn [db] (assoc db asset-id (assoc (vars->map layers objects map-width map-height)
+           (fn [db] (assoc db asset-id (assoc (vars->map layers objectgroup map-width map-height)
                                               :firstgids (->> tilesets (mapv :firstgid) (sort >))))))
 
     (doseq [tileset tilesets]
@@ -249,5 +281,7 @@
                              :tag :properties}],
                   :tag :object}]]
     (= (parse-objects-content objects)
-       [{:gid 454, :height 16, :id 28, :name "Bucket", :properties {:money 5, :unwalkable false}, :width 16, :x 48, :y 96}
-        {:gid 454, :height 16, :id 29, :name "Bucket", :properties {:money -5, :unwalkable true}, :width 16, :x 48, :y 96}])))
+       [{:gid 454, :height 16, :id 28, :name "Bucket", ::props {:money 5, :unwalkable false}, :width 16, :x 48, :y 96}
+        {:gid 454, :height 16, :id 29, :name "Bucket", ::props {:money -5, :unwalkable true}, :width 16, :x 48, :y 96}]))
+
+  (sp/select [:asset/worldmap ::tiled-map :layers (sp/multi-path "Structures" "Interactables") 2 5 some?] @asset/db*))
