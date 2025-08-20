@@ -3,10 +3,12 @@
    #?(:clj [assets.on-compile.fonts :as fonts :refer [load-font-clj]]
       :cljs [assets.on-compile.fonts :as fonts :refer-macros [load-font-cljs]])
    [assets.chars :as chars]
+   [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.text :as gl-text]
    [play-cljc.instances :as i]
-   [play-cljc.transforms :as t]))
+   [play-cljc.transforms :as t]
+   [rules.ubim :as ubim]))
 
 ;; from example play-cljc-examples/ui-gallery/src/ui_gallery
 
@@ -23,12 +25,14 @@
            ;; an entity whose text can be set dynamically
            dynamic-entity (c/compile game (i/->instanced-entity font-entity))]
        (swap! state* assoc
+              :counter 42
               :font-entity font-entity
               :static-entity static-entity
               :dynamic-entity dynamic-entity)))))
 
-(defn render [game game-width game-height]
-  (let [state (swap! state* update :counter inc)
+(defn render [game world camera game-width game-height]
+  (let [{:keys [x y]} (first (o/query-all world ::ubim/ubim-esse))
+        state (swap! state* update :counter inc)
         {:keys [font-entity
                 static-entity
                 dynamic-entity
@@ -56,14 +60,17 @@
                            (t/project game-width game-height)
                            (t/translate 0 100)))
         ;; render the frame count
-        (let [text ["Frame count:" (str counter)]]
+        (let [text ["Frame count: " (str counter)]]
           (c/render game (-> (reduce
                               (partial apply chars/assoc-char)
                               dynamic-entity
                               (for [line-num (range (count text))
                                     char-num (range (count (nth text line-num)))
                                     :let [ch (get-in text [line-num char-num])]]
-                                [line-num char-num (chars/crop-char font-entity ch)]))
+                                [line-num char-num
+                                 (-> font-entity 
+                                     (chars/crop-char ch)
+                                     (t/color [0.5 1 0 1]))]))
                              (t/project game-width game-height)
-                             (t/translate 100 200)
-                             (t/scale 2 2))))))))
+                             (t/invert camera)
+                             (t/translate x y))))))))

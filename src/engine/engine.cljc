@@ -66,7 +66,7 @@
                              (update :viewport assoc :width game-width :height game-height)))
           (tiled/render-tiled-map game camera game-width game-height)
           (ubim/render game world camera game-width game-height)
-          (texts/render game game-width game-height)
+          (texts/render game world camera game-width game-height)
           (shader/render-shader-esses game world game-width game-height)))
       (catch #?(:clj Exception :cljs js/Error) err
         (swap! world/world* #(-> % (dev-only/warn (str "tick error " err))))

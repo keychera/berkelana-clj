@@ -18,8 +18,17 @@ todo:
         ✔ vertex animation @done(25-08-03 14:17)
 
     ☐ Text
-        ☐ explore play-cljc.text
+        ✔ explore play-cljc.text @done(25-08-21 00:41)
+        ☐ hook load logic to rules-engine/assets
+        ☐ represents text assets as esse/asset
         ☐ dialogues
+            ☐ n-patch dialogue box
+            ☐ triggerrable
+            ☐ script
+            ☐ typing text
+            ☐ positions
+            ☐ timeline
+        
 
     ☐ Scenes
         ☐ menu
