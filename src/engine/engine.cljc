@@ -2,7 +2,8 @@
   (:require
    #?(:clj  [play-cljc.macros-java :refer [gl]]
       :cljs [play-cljc.macros-js :refer-macros [gl]])
-   [assets.assets :as asset]
+   [assets.assets :as assets]
+   [assets.texts :as texts]
    [assets.tiled :as tiled]
    [engine.refresh :refer [*refresh?]]
    [engine.utils :as utils]
@@ -20,7 +21,8 @@
 
 (defn compile-all [game world*]
   (shader/load-shader game world*)
-  (asset/load-asset game world*))
+  (assets/load-asset game world*)
+  (texts/init game))
 
 (defn init [game]
   (gl game enable (gl game BLEND))
@@ -64,6 +66,7 @@
                              (update :viewport assoc :width game-width :height game-height)))
           (tiled/render-tiled-map game camera game-width game-height)
           (ubim/render game world camera game-width game-height)
+          (texts/render game game-width game-height)
           (shader/render-shader-esses game world game-width game-height)))
       (catch #?(:clj Exception :cljs js/Error) err
         (swap! world/world* #(-> % (dev-only/warn (str "tick error " err))))
