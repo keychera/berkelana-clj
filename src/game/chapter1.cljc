@@ -1,6 +1,6 @@
 (ns game.chapter1
   (:require
-   [assets.asset :as asset]
+   [assets.assets :as asset]
    [assets.spritesheet :as spritesheet]
    [assets.tiled :as tiled]
    [rules.esse :as esse :refer [asset esse]]

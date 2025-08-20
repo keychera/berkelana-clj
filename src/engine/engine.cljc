@@ -2,7 +2,7 @@
   (:require
    #?(:clj  [play-cljc.macros-java :refer [gl]]
       :cljs [play-cljc.macros-js :refer-macros [gl]])
-   [assets.asset :as asset]
+   [assets.assets :as asset]
    [assets.tiled :as tiled]
    [engine.refresh :refer [*refresh?]]
    [engine.utils :as utils]

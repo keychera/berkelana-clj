@@ -1,4 +1,4 @@
-(ns assets.asset
+(ns assets.assets
   (:require
    [clojure.spec.alpha :as s]
    [clojure.string :as str]

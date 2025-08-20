@@ -4,14 +4,14 @@
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as e2d]
-   [assets.asset :as asset]
+   [assets.assets :as asset]
    [engine.utils :as utils]))
 
 (s/def ::frame-width int?)
 (s/def ::frame-height int?)
 
 (defmethod asset/process-asset ::asset/spritesheet
-  [game world* asset-id {::asset/keys [img-to-load]}]
+  [game world* asset-id {::asset/keys [:assets.assets/img-to-load]}]
   (utils/get-image
    img-to-load
    (fn [{:keys [data width height]}]

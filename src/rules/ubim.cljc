@@ -2,7 +2,7 @@
   (:require
    #?(:clj [engine.macros :refer [insert!]]
       :cljs [engine.macros :refer-macros [insert!]])
-   [assets.asset :as asset]
+   [assets.assets :as asset]
    [assets.spritesheet :as spritesheet]
    [clojure.spec.alpha :as s]
    [odoyle.rules :as o]

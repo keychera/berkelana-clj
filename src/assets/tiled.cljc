@@ -10,7 +10,7 @@
    [play-cljc.gl.entities-2d :as e2d]
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
-   [assets.asset :as asset]
+   [assets.assets :as asset]
    [odoyle.rules :as o]))
 
 (def world-map-tmx

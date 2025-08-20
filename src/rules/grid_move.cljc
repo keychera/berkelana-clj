@@ -2,7 +2,7 @@
   (:require
    #?(:clj [engine.macros :refer [insert! s->]]
       :cljs [engine.macros :refer-macros [s-> insert!]])
-   [assets.asset :as asset]
+   [assets.assets :as asset]
    [assets.tiled :as tiled]
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as sp]

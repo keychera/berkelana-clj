@@ -1,6 +1,6 @@
 (ns rules.esse
   (:require
-   [assets.asset :as asset]
+   [assets.assets :as asset]
    [engine.utils :refer [deep-merge]]
    [odoyle.rules :as o]))
 

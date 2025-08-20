@@ -1,7 +1,7 @@
 (ns engine.world
   (:require
    #?(:cljs [rules.dev.leva-rules :as leva-rules])
-   [assets.asset :as asset]
+   [assets.assets :as asset]
    [assets.tiled :as tiled]
    [odoyle.rules :as o]
    [rules.camera :as camera]
