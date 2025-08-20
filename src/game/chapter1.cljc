@@ -16,8 +16,10 @@
                    #::spritesheet{:frame-width 32 :frame-height 32})
             (asset :asset/worldmap
                    #::asset{:type ::asset/tiledmap}
-                   #::tiled{:parsed-tmx tiled/world-map-tmx})))
-      (esse :ubim
-            grid-move/default #::grid-move{:target-attr-x ::pos2d/x :target-attr-y ::pos2d/y :pos-x 2 :pos-y 4}
-            #::pos2d{:x 0 :y 0}
-            #::ubim{:sprite-from-asset :asset/char0 :frame-index 0 :anim-tick 0 :anim-elapsed-ms 0})))
+                   #::tiled{:parsed-tmx tiled/world-map-tmx})
+            (esse :ubim
+                  grid-move/default #::grid-move{:target-attr-y ::pos2d/y :pos-x 2 :pos-y 4}
+                  #::pos2d{:x 0 :y 0}
+                  #::ubim{:sprite-from-asset :asset/char0 :frame-index 0 :anim-tick 0 :anim-elapsed-ms 0})))
+      ;; need to understand why this separation preserve the player pos on reload
+      (esse :ubim #::grid-move{:target-attr-x ::pos2d/x})))
