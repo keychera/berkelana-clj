@@ -18,6 +18,7 @@ todo:
         ✔ vertex animation @done(25-08-03 14:17)
 
     ☐ Text
+        ☐ explore play-cljc.text
         ☐ dialogues
 
     ☐ Scenes
@@ -38,7 +39,8 @@ todo:
         ☐ canopy (things that will cover the player), seems to be not trivial
         ☐ animated tiles
         ☐ bushes effect (some patch of bushes in front of player, particles)
-        ☐ (actual)Objects layer
+        ✔ (actual)Objects layer @done(25-08-20 07:03)
+            ☐ turn some objects into esse
         ☐ 2d entities employing 3rd dimension
 
 
