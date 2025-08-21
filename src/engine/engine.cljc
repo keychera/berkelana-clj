@@ -21,23 +21,24 @@
    [rules.ubim :as ubim]
    [rules.window :as window]))
 
-(defn compile-all [game world*]
+(defn compile-all [game world* first-init?]
   (shader/load-shader game world*)
   (assets/load-asset game world*)
-  (texts/init game))
+  (when first-init? (texts/init game)))
 
 (defn init [game]
   (gl game enable (gl game BLEND))
   (gl game blendFunc (gl game SRC_ALPHA) (gl game ONE_MINUS_SRC_ALPHA))
-  (let [[game-width game-height] (utils/get-size game)]
+  (let [[game-width game-height] (utils/get-size game)
+        first-init? (nil? @world/world*)]
     (reset! context/game* game)
     (swap! world/world*
            (fn [world]
              (-> (world/init-world world)
                  (window/set-window game-width game-height)
-                 (chapter1/init (nil? world))
+                 (chapter1/init first-init?)
                  (o/fire-rules))))
-    (compile-all game world/world*)))
+    (compile-all game world/world* first-init?)))
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
