@@ -1,17 +1,18 @@
 (ns assets.tiled
   (:require
-   #?(:clj [engine.macros :refer [vars->map s-> read-tiled-map-on-compile]]
+   #?(:clj [engine.macros :refer [read-tiled-map-on-compile s-> vars->map]]
       :cljs [engine.macros :refer-macros [vars->map s-> read-tiled-map-on-compile]])
+   [assets.assets :as asset]
    [clojure.edn :as edn]
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as sp]
+   [engine.context :as context]
    [engine.utils :as utils]
+   [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as e2d]
    [play-cljc.instances :as instances]
-   [play-cljc.transforms :as t]
-   [assets.assets :as asset]
-   [odoyle.rules :as o]))
+   [play-cljc.transforms :as t]))
 
 (def world-map-tmx
   (edn/read-string (read-tiled-map-on-compile "tiled143/world.tmx")))
@@ -27,7 +28,7 @@
      (if (< id v) id (reduced v)))
    id firstgids))
 
-(defn load-tile-instances [game asset-id]
+(defn load-tile-instances [asset-id]
   (let [asset-data (get @asset/db* asset-id)
         firstgid->tileset (:firstgid->tileset asset-data)
 
@@ -121,7 +122,7 @@
          #(-> %
               (assoc :i 0)
               (update :entity (fn [entity]
-                                (c/compile game (instances/->instanced-entity entity))))))
+                                (c/compile @context/game* (instances/->instanced-entity entity))))))
 
         firstgid->instanced-entity
         (reduce
@@ -145,17 +146,15 @@
     [:what
      [tileset-name ::tilesets-loaded? loaded?]
      [tileset-name ::for asset-id]
-     [tileset-name ::game-state passed-game] ;; feels hacky, we definitely use rules engine where it's not supposed to be used
      :then
      (let [to-load     (o/query-all session ::tilesets-to-load)
            all-loaded? (reduce #(and (:loaded? %1) (:loaded? %2)) to-load)]
        (when all-loaded?
          (s-> session
               (o/retract tileset-name ::tilesets-loaded?)
-              (o/retract tileset-name ::for)
-              (o/retract tileset-name ::game-state)
+              (o/retract tileset-name ::for) 
               (o/insert asset-id ::asset/loaded? true))
-         (load-tile-instances passed-game asset-id)))]}))
+         (load-tile-instances asset-id)))]}))
 
 (defn parse-value-type [{:keys [value type]}]
   (case type
@@ -225,7 +224,6 @@
            #(reduce (fn [w t]
                       (-> w
                           (o/insert (:name t) ::tilesets-loaded? false)
-                          (o/insert (:name t) ::game-state game)
                           (o/insert (:name t) ::for asset-id))) % tilesets))
     (swap! asset/db*
            (fn [db] (assoc db asset-id (assoc (vars->map layers objectgroup map-width map-height)

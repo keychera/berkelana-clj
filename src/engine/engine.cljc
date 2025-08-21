@@ -5,6 +5,7 @@
    [assets.assets :as assets]
    [assets.texts :as texts]
    [assets.tiled :as tiled]
+   [engine.context :as context]
    [engine.refresh :refer [*refresh?]]
    [engine.utils :as utils]
    [engine.world :as world]
@@ -29,6 +30,7 @@
   (gl game enable (gl game BLEND))
   (gl game blendFunc (gl game SRC_ALPHA) (gl game ONE_MINUS_SRC_ALPHA))
   (let [[game-width game-height] (utils/get-size game)]
+    (reset! context/game* game)
     (swap! world/world*
            (fn [world]
              (-> (world/init-world world)

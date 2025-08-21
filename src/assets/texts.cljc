@@ -43,11 +43,10 @@
 
 (defn render [game world camera game-width game-height]
   (let [{:keys [x y]} (first (o/query-all world ::ubim/ubim-esse)) 
-        test-counter  (first (o/query-all world ::test-counter)) 
         texts (swap! texts* update :counter inc) 
         {:keys [font-entity dynamic-entity counter]} texts] 
     (when (and (pos? game-width) (pos? game-height) font-entity dynamic-entity counter)
-      (let [text [(str test-counter) "Frame count: " (str counter)]]
+      (let [text ["Frame count: " (str counter)]]
         (c/render game (-> (reduce
                             (partial apply chars/assoc-char)
                             dynamic-entity
@@ -60,5 +59,5 @@
                                    (t/color [1 1 1 1]))]))
                            (t/project game-width game-height)
                            (t/invert camera)
-                           (t/translate (+ x 8) (- y 16))
+                           (t/translate (+ x 8) (- y 26))
                            (t/scale 0.2 0.2)))))))

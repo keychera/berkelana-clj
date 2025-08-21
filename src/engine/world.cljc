@@ -12,7 +12,8 @@
    [rules.shader :as shader]
    [rules.time :as time]
    [rules.ubim :as ubim]
-   [rules.window :as window]))
+   [rules.window :as window]
+   [rules.dialogues :as dialogues]))
 
 (defonce world* (atom nil))
 
@@ -46,6 +47,7 @@
                           time/rules
                           input/rules
                           texts/rules
+                          dialogues/rules
                           asset/rules
                           tiled/rules
                           grid-move/rules

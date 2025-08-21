@@ -15,9 +15,10 @@
   (utils/get-image
    img-to-load
    (fn [{:keys [data width height]}]
-     (let [image-entity (e2d/->image-entity game data width height)
-           image-entity (c/compile game image-entity)
-           image-entity (assoc image-entity :width width :height height)]
+     (let [raw-image-entity (e2d/->image-entity game data width height)
+           image-entity     (c/compile game raw-image-entity)
+           image-entity     (assoc image-entity :width width :height height)]
        (println "loaded spritesheet asset from" img-to-load)
+       (swap! asset/db* assoc-in [asset-id ::raw-image] raw-image-entity)
        (swap! asset/db* assoc-in [asset-id ::image] image-entity)
        (swap! world* #(-> % (o/insert asset-id ::asset/loaded? true)))))))
