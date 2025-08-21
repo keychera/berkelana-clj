@@ -14,6 +14,7 @@
    [play-cljc.gl.entities-2d :as e]
    [rules.camera :as camera]
    [rules.dev.dev-only :as dev-only]
+   [rules.dialogues :as dialogues]
    [rules.shader :as shader]
    [rules.time :as time]
    [rules.ubim :as ubim]
@@ -66,6 +67,7 @@
                              (update :viewport assoc :width game-width :height game-height)))
           (tiled/render-tiled-map game camera game-width game-height)
           (ubim/render game world camera game-width game-height)
+          (dialogues/render game world camera game-width game-height)
           (texts/render game world camera game-width game-height)
           (shader/render-shader-esses game world game-width game-height)))
       (catch #?(:clj Exception :cljs js/Error) err

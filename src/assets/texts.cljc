@@ -57,8 +57,8 @@
                               [line-num char-num
                                (-> font-entity
                                    (chars/crop-char ch)
-                                   (t/color [0.5 1 0 1]))]))
+                                   (t/color [1 1 1 1]))]))
                            (t/project game-width game-height)
                            (t/invert camera)
-                           (t/translate x y)
+                           (t/translate (+ x 8) (- y 16))
                            (t/scale 0.2 0.2)))))))
