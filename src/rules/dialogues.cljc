@@ -21,7 +21,10 @@
    :signatures
    '{main ([] void)}
    :functions
-   '{main ([] (= o_color (texture u_image v_tex_coord)))}})
+   '{main ([] 
+           (=vec4 tex (texture u_image v_tex_coord))
+           (=float a (min (.a tex) 0.7))
+           (= o_color (vec4 (.rgb tex) a)))}})
 
 (defonce dialogue-asset* (atom nil))
 
