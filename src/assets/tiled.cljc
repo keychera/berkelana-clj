@@ -180,9 +180,10 @@
                  :attrs
                  [:content sp/ALL #(= (:tag %) :properties) :content (sp/putval ::props)
                   (sp/transformed
-                   (sp/transformed [sp/ALL] (fn [{prop :attrs}] [(keyword (:name prop)) (parse-value-type prop)]))
+                   ;; in clj, fn what is supplied the wrong arity will throw, whil cljs not
+                   (sp/transformed sp/ALL (fn [{prop :attrs} & _] [(keyword (:name prop)) (parse-value-type prop)]))
                    (fn [e] (into {} e)))]))
-               (fn [[attrs props]] (conj attrs props)))]
+               (fn [[attrs props] & _] (conj attrs props)))]
              objects-content))
 
 (defmethod asset/process-asset ::asset/tiledmap

@@ -2,6 +2,7 @@
   (:require
    #?(:cljs [rules.dev.leva-rules :as leva-rules])
    [assets.assets :as asset]
+   [assets.texts :as texts]
    [assets.tiled :as tiled]
    [odoyle.rules :as o]
    [rules.camera :as camera]
@@ -44,6 +45,7 @@
                           camera/rules
                           time/rules
                           input/rules
+                          texts/rules
                           asset/rules
                           tiled/rules
                           grid-move/rules
@@ -60,7 +62,8 @@
     (reset! previous-rules all-rules)
     (-> (->> all-rules
              (map #'rules-debugger-wrap-fn)
-             (reduce o/add-rule session)))))
+             (reduce o/add-rule session))
+        (o/insert ::texts/test ::texts/test-counter 0))))
 
 
 (comment
