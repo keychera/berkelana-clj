@@ -2,7 +2,8 @@
   (:require
    #?(:clj  [play-cljc.macros-java :refer [gl]]
       :cljs [play-cljc.macros-js :refer-macros [gl]])
-   [assets.assets :as assets]
+   #?(:cljs [rules.dev.leva-rules :as leva-rules])
+   [assets.assets :as asset]
    [assets.texts :as texts]
    [assets.tiled :as tiled]
    [engine.context :as context]
@@ -19,12 +20,29 @@
    [rules.shader :as shader]
    [rules.time :as time]
    [rules.ubim :as ubim]
-   [rules.window :as window]))
+   [rules.window :as window]
+   [rules.grid-move :as grid-move]
+   [rules.input :as input]))
 
 (defn compile-all [game world* first-init?]
   (shader/load-shader game world*)
-  (assets/load-asset game world*)
+  (asset/load-asset game world*)
   (when first-init? (texts/init game)))
+
+(def all-rules
+  (concat window/rules
+          camera/rules
+          time/rules
+          input/rules
+          texts/rules
+          dialogues/rules
+          asset/rules
+          tiled/rules
+          grid-move/rules
+          shader/rules
+          ubim/rules
+          #?(:cljs leva-rules/rules)
+          dev-only/rules))
 
 (defn init [game]
   (gl game enable (gl game BLEND))
@@ -34,7 +52,8 @@
     (reset! context/game* game)
     (swap! world/world*
            (fn [world]
-             (-> (world/init-world world)
+             (-> (world/init-world world all-rules)
+                 (o/insert ::texts/test ::texts/test-counter 0)
                  (window/set-window game-width game-height)
                  (chapter1/init first-init?)
                  (o/fire-rules))))
@@ -42,10 +61,9 @@
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
-   :clear {:color [(/ 0 255) (/ 0 255) (/ 0 255) 1.0] :depth 1}})
+   :clear    {:color [(/ 0 255) (/ 0 255) (/ 0 255) 1.0] :depth 1}})
 
 (def camera (e/->camera true))
-;; SCROT but the last one is the first
 
 (defn tick [game]
   (if @*refresh?
@@ -63,8 +81,8 @@
                               (time/insert total-time delta-time)
                               o/fire-rules))
             {game-width :width game-height :height} (first (o/query-all world ::window/window))
-            {cam-fn :cam-fn}  (first (o/query-all world ::camera/camera-matrix))
-            camera  (cam-fn camera)]
+            {cam-fn :cam-fn} (first (o/query-all world ::camera/camera-matrix))
+            camera (cam-fn camera)]
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))
