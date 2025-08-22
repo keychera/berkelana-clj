@@ -6,6 +6,7 @@
       :cljs [play-cljc.macros-js :refer-macros [gl]])
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as specter]
+   [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as entities-2d]
@@ -96,16 +97,16 @@
 
 
 
-(defn load-shader [game world*]
-  (doseq [{:keys [esse-id shader-fn]} (o/query-all @world* ::load-shader)]
+(defn load-shader [game]
+  (doseq [{:keys [esse-id shader-fn]} (o/query-all @world/world* ::load-shader)]
     (println "loading shader for" esse-id)
-    (swap! world* #(o/insert % esse-id ::loading? true))
+    (swap! world/world* #(o/insert % esse-id ::loading? true))
     (try (let [compiled-shader (c/compile game (shader-fn game))]
-           (swap! world* #(-> %
+           (swap! world/world* #(-> %
                                 (o/retract esse-id ::loading?)
                                 (o/insert esse-id ::compiled-shader compiled-shader))))
          (catch #?(:clj Exception :cljs js/Error) err ;; maybe devonly
-           (swap! world* #(-> % (o/retract esse-id ::loading?)))
+           (swap! world/world* #(-> % (o/retract esse-id ::loading?)))
            (throw err)))))
 
 (defn render-shader-esses [game world game-width game-height]

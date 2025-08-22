@@ -2,6 +2,7 @@
   (:require
    [clojure.spec.alpha :as s]
    [clojure.string :as str]
+   [engine.world :as world]
    [odoyle.rules :as o]))
 
 ;; init, only png for now, or forever
@@ -18,14 +19,14 @@
     [:what
      [asset-id ::loaded? loaded]]}))
 
-(defmulti process-asset (fn [_game _world* _asset-id asset-data] (::type asset-data)))
+(defmulti process-asset (fn [_game _asset-id asset-data] (::type asset-data)))
 
 (defmethod process-asset :default
-  [_game _world* asset-id {:keys [asset-type] :as _asset_data}]
+  [_game asset-id {:keys [asset-type] :as _asset_data}]
   (println "asset(" asset-id ") has unhandled type (" asset-type ")"))
 
-(defn load-asset [game world*]
-  (doseq [{:keys [asset-id]} (o/query-all @world* ::to-load)]
+(defn load-asset [game]
+  (doseq [{:keys [asset-id]} (o/query-all @world/world* ::to-load)]
     (let [asset-data (get @db* asset-id)]
       (println "loading" (::type asset-data) "asset for" asset-id)
-      (process-asset game world* asset-id asset-data))))
+      (process-asset game asset-id asset-data))))

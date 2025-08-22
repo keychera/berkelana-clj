@@ -24,9 +24,9 @@
    [rules.grid-move :as grid-move]
    [rules.input :as input]))
 
-(defn compile-all [game world* first-init?]
-  (shader/load-shader game world*)
-  (asset/load-asset game world*)
+(defn compile-all [game first-init?]
+  (shader/load-shader game)
+  (asset/load-asset game)
   (when first-init? (texts/init game)))
 
 (def all-rules
@@ -57,7 +57,7 @@
                  (window/set-window game-width game-height)
                  (chapter1/init first-init?)
                  (o/fire-rules))))
-    (compile-all game world/world* first-init?)))
+    (compile-all game first-init?)))
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}

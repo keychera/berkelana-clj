@@ -5,13 +5,14 @@
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as e2d]
    [assets.assets :as asset]
-   [engine.utils :as utils]))
+   [engine.utils :as utils]
+   [engine.world :as world]))
 
 (s/def ::frame-width int?)
 (s/def ::frame-height int?)
 
 (defmethod asset/process-asset ::asset/spritesheet
-  [game world* asset-id {::asset/keys [img-to-load]}]
+  [game asset-id {::asset/keys [img-to-load]}]
   (utils/get-image
    img-to-load
    (fn [{:keys [data width height]}]
@@ -21,4 +22,4 @@
        (println "loaded spritesheet asset from" img-to-load)
        (swap! asset/db* assoc-in [asset-id ::raw-image] raw-image-entity)
        (swap! asset/db* assoc-in [asset-id ::image] image-entity)
-       (swap! world* #(-> % (o/insert asset-id ::asset/loaded? true)))))))
+       (swap! world/world* #(-> % (o/insert asset-id ::asset/loaded? true)))))))

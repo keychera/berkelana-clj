@@ -12,7 +12,8 @@
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as e2d]
    [play-cljc.instances :as instances]
-   [play-cljc.transforms :as t]))
+   [play-cljc.transforms :as t]
+   [engine.world :as world]))
 
 (def world-map-tmx
   (edn/read-string (read-tiled-map-on-compile "tiled143/world.tmx")))
@@ -186,7 +187,7 @@
              objects-content))
 
 (defmethod asset/process-asset ::asset/tiledmap
-  [game world* asset-id {::keys [parsed-tmx]}]
+  [game asset-id {::keys [parsed-tmx]}]
   (let [home-path      (:home-path parsed-tmx)
         map-width      (-> parsed-tmx :attrs :width)
         map-height     (-> parsed-tmx :attrs :height)
@@ -220,7 +221,7 @@
                                            [id {::layer-name name ::objects (parse-objects-content content)}]))]
                         parsed-tmx)
              (into {}))]
-    (swap! world*
+    (swap! world/world*
            #(reduce (fn [w t]
                       (-> w
                           (o/insert (:name t) ::tilesets-loaded? false)
@@ -238,7 +239,7 @@
                tileset      (assoc tileset :entity loaded-image)]
            (println "loaded tileset asset from" (-> tileset :image :source))
            (swap! asset/db* #(-> %  (assoc-in [asset-id :firstgid->tileset (:firstgid tileset)] tileset)))
-           (swap! world* #(-> %
+           (swap! world/world* #(-> %
                               (o/insert (:name tileset) ::tilesets-loaded? true)
                               (o/fire-rules)))))))))
 
