@@ -22,3 +22,8 @@ node_modules/
 .zzz
 *.ini
 *.log
+
+# for cursive
+pom.xml
+.idea
+*.iml

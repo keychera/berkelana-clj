@@ -2,11 +2,11 @@ todo:
     ✔ movement @done(25-07-29 21:12)
         ✔ helltaker's feel @done(25-08-01 00:55) kinda feel nice now
         ✔ easing @done(25-08-01 02:05)
-    
+
     ✔ fps counter @done(25-08-01 00:55)
         ✔ why is it 165 fps? try to understand it more @done(25-08-02 23:08) it's monitor refresh rate!
         ☐ fps limiting
-    
+
     ✔ the mutable and the constant, the refreshable and the initialization @done(25-08-09 19:01)
     ✔ naming fatigue!! @done(25-08-09 19:01)
         ✔ namespace as rule grouping @done(25-08-09 19:01)
@@ -18,7 +18,7 @@ todo:
         ✔ vertex animation @done(25-08-03 14:17)
 
     ☐ refactor needed for resource load ordering and solving text/spritesheet instance error
-        ☐ try cursive
+        ✔ try cursive @done(25-08-23 01:41)
         ☐ supply rules to worlds
         ☐ access to world* atom instead of passing
         ☐ make spritesheet an instance
