@@ -17,6 +17,15 @@ todo:
         ✔ bounce @done(25-08-03 14:17)
         ✔ vertex animation @done(25-08-03 14:17)
 
+    ☐ refactor needed for resource load ordering and solving text/spritesheet instance error
+        ☐ try cursive
+        ☐ supply rules to worlds
+        ☐ access to world* atom instead of passing
+        ☐ make spritesheet an instance
+        ☐ implement order and check if texture mixing is still happening
+        ☐ crop dialogue manually
+        ☐ dialogue box
+
     ☐ Text
         ✔ explore play-cljc.text @done(25-08-21 00:41)
         ☐ hook load logic to rules-engine/assets
