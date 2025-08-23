@@ -10,7 +10,8 @@
    [play-cljc.transforms :as t]
    [rules.input :as input]
    [rules.pos2d :as pos2d]
-   [rules.time :as time]))
+   [rules.time :as time]
+   [play-cljc.instances :as instances]))
 
 (s/def ::anim-tick number?)
 (s/def ::anim-elapsed-ms number?)
@@ -56,18 +57,23 @@
 
 
 (defn render [game world camera game-width game-height]
-  (let [sprite-esses (o/query-all world ::ubim-esse)]
-    (doseq [sprite-esse sprite-esses]
-      (let [{:keys [x y asset-id frame-index]} sprite-esse
-            {::spritesheet/keys [image frame-height frame-width]} (get @asset/db* asset-id)
-            frames-per-row (/ (:width image) frame-width)
-            frame-x (mod frame-index frames-per-row)
-            frame-y (quot frame-index frames-per-row)
-            crop-x (* frame-x frame-width)
-            crop-y (* frame-y frame-height)]
-        (c/render game (-> image
-                           (t/crop crop-x crop-y frame-width frame-height)
-                           (t/project game-width game-height)
-                           (t/invert camera)
-                           (t/translate x y)
-                           (t/scale frame-width frame-height)))))))
+  (when-let [sprite-esse (first (o/query-all world ::ubim-esse))]
+    (let [{:keys [x y asset-id frame-index]} sprite-esse
+          {::spritesheet/keys [raw instanced frame-height frame-width]} (get @asset/db* asset-id)
+          frames-per-row (/ (:width instanced) frame-width)
+          frame-x (mod frame-index frames-per-row)
+          frame-y (quot frame-index frames-per-row)
+          crop-x (* frame-x frame-width)
+          crop-y (* frame-y frame-height)
+          ubim (-> raw
+                   (t/crop crop-x crop-y frame-width frame-height)
+                   (t/invert camera)
+                   (t/translate x y)
+                   (t/scale frame-width frame-height))
+          instanced (-> (instances/assoc instanced 0 ubim)
+                        (t/project game-width game-height))
+          ;; t/project is done here because of webgl only bug that is caused by instanced having no :uniforms
+          ;; which make (gl game uniform1i location unit) is not called on render
+          ;; and somehow lwjgl still works fine while webgl uses texts' texture instead
+          ]
+      (c/render game instanced))))

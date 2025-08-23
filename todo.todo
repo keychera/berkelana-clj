@@ -18,11 +18,11 @@ todo:
         ✔ vertex animation @done(25-08-03 14:17)
 
     ☐ refactor needed for resource load ordering and solving text/spritesheet instance error
-        ✔ try cursive @done(25-08-23 01:41)
-        ☐ supply rules to worlds
-        ☐ access to world* atom instead of passing
-        ☐ make spritesheet an instance
-        ☐ implement order and check if texture mixing is still happening
+        ✘ try cursive @cancelled(25-08-23 12:24) 
+        ✔ supply rules to worlds @done(25-08-23 12:23)
+        ✔ access to world* atom instead of passing @done(25-08-23 12:24)
+        ✔ make spritesheet an instance @done(25-08-23 12:24)
+        ✘ implement order and check if texture mixing is still happening @cancelled(25-08-23 12:24) the bug is caused by no :uniforms on instance (see ubim.cljc)
         ☐ crop dialogue manually
         ☐ dialogue box
 

@@ -13,3 +13,8 @@ native
 ```
 clj -T:build desktop
 ```
+
+
+## war stories
+
+about instancing: we encountered some nasty WebGL2 only bug because of instancing not having :uniforms on render
