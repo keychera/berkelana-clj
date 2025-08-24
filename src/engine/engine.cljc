@@ -35,7 +35,6 @@
    camera/rules
    time/rules
    input/rules
-   texts/rules
    asset/rules
    tiled/rules
    grid-move/rules
@@ -47,7 +46,8 @@
 
 (def all-systems
   ;; gonna refactor everything to this
-  (concat [dialogues/system]
+  (concat [texts/system
+           dialogues/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
 
@@ -62,7 +62,7 @@
     (swap! world/world*
            (fn [world]
              (-> (world/init-world world all-rules)
-                 (o/insert ::texts/test ::texts/test-counter 0)
+                 (o/insert ::texts/test ::texts/counter 0)
                  (as-> w (reduce (fn [w init-fn] (init-fn w)) w all-init))
                  (window/set-window game-width game-height)
                  (chapter1/init first-init?)

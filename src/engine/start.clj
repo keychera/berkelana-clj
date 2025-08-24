@@ -56,6 +56,7 @@
     GLFW/GLFW_KEY_RIGHT :right
     GLFW/GLFW_KEY_UP :up
     GLFW/GLFW_KEY_DOWN :down
+    GLFW/GLFW_KEY_SPACE ::input/space
     nil))
 
 (defn on-key! [window keycode scancode action mods]
