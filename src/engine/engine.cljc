@@ -22,38 +22,48 @@
    [rules.ubim :as ubim]
    [rules.window :as window]
    [rules.grid-move :as grid-move]
-   [rules.input :as input]))
+   [rules.input :as input]
+   [com.rpl.specter :as sp]))
 
 (defn compile-all [game first-init?]
   (shader/load-shader game)
   (asset/load-asset game)
   (when first-init? (texts/init game)))
 
-(def all-rules
-  (concat window/rules
-          camera/rules
-          time/rules
-          input/rules
-          texts/rules
-          dialogues/rules
-          asset/rules
-          tiled/rules
-          grid-move/rules
-          shader/rules
-          ubim/rules
-          #?(:cljs leva-rules/rules)
-          dev-only/rules))
+(def all-rules-legacy-abstraction
+  [window/rules
+   camera/rules
+   time/rules
+   input/rules
+   texts/rules
+   asset/rules
+   tiled/rules
+   grid-move/rules
+   shader/rules
+   ubim/rules
+   #?(:cljs leva-rules/rules)
+   dev-only/rules])
+
+
+(def all-systems
+  ;; gonna refactor everything to this
+  (concat [dialogues/system]
+          (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
+
 
 (defn init [game]
   (gl game enable (gl game BLEND))
   (gl game blendFunc (gl game SRC_ALPHA) (gl game ONE_MINUS_SRC_ALPHA))
   (let [[game-width game-height] (utils/get-size game)
-        first-init? (nil? @world/world*)]
+        first-init? (nil? @world/world*)
+        all-rules (apply concat (sp/select [sp/ALL ::world/rules] all-systems))
+        all-init  (sp/select [sp/ALL ::world/init some?] all-systems)]
     (reset! context/game* game)
     (swap! world/world*
            (fn [world]
              (-> (world/init-world world all-rules)
                  (o/insert ::texts/test ::texts/test-counter 0)
+                 (as-> w (reduce (fn [w init-fn] (init-fn w)) w all-init))
                  (window/set-window game-width game-height)
                  (chapter1/init first-init?)
                  (o/fire-rules))))

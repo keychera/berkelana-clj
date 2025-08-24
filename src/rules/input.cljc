@@ -5,6 +5,22 @@
    [clojure.spec.alpha :as s]
    [odoyle.rules :as o]))
 
+(defn js-keyCode->keyname [keycode]
+  (condp = keycode
+    32 ::space
+    37 :left
+    38 :up
+    39 :right
+    40 :down
+    nil))
+
+(s/def ::x number?)
+(s/def ::y number?)
+
+(s/def ::pressed-key keyword?)
+(s/def ::keydown any?)
+(s/def ::keyup any?)
+
 (def rules
   (o/ruleset
    {::mouse
@@ -21,12 +37,3 @@
      [keyname ::pressed-key ::keyup]
      :then
      (s-> session (o/retract keyname ::pressed-key))]}))
-
-
-(s/def ::x number?)
-(s/def ::y number?)
-
-(s/def ::pressed-key keyword?)
-(s/def ::keydown any?)
-(s/def ::keyup any?)
-

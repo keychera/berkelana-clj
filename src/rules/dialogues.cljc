@@ -1,14 +1,17 @@
 (ns rules.dialogues
   (:require
-   #?(:clj :cljs)
    [assets.assets :as asset]
    [assets.spritesheet :as spritesheet]
+   [clojure.spec.alpha :as s]
    [engine.context :as context]
+   [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
+   [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
-   [rules.ubim :as ubim]
-   [play-cljc.instances :as instances]))
+   [rules.input :as input]
+   [rules.time :as time]
+   [rules.ubim :as ubim]))
 
 (def dialogue-box-frag-shader
   {:precision "mediump float"
@@ -39,14 +42,36 @@
             {::raw raw-image
              ::instanced dialogue-instanced})))
 
-(def rules
-  (o/ruleset
-   {::prep-dialogue-box
-    [:what
-     [:asset/berkelana ::asset/loaded? true]
-     :then
-     (when (nil? @dialogue-instance*)
-       (init-asset))]}))
+
+(def script
+  [["it's okay now" "It's all gone"]
+   ["You can be yourself again"]])
+
+(s/def ::counter int?)
+
+(def system
+  {::world/init
+   (fn [world]
+     (o/insert world ::this ::counter 0))
+   
+   ::world/rules
+   (o/ruleset
+    {::prep-dialogue-box
+     [:what
+      [:asset/berkelana ::asset/loaded? true]
+      :then
+      (when (nil? @dialogue-instance*)
+        (init-asset))]
+
+     ::progress-dialogue
+     [:what
+      [::time/now ::time/delta delta-time]
+      [pressed-key ::input/pressed-key ::input/keydown]
+      [::this ::counter counter]
+      :then
+      (println "hey" pressed-key)]})})
+
+(type (::world/rules system))
 
 (defn nine-patch [raw camera width height pos-x pos-y]
   (let [frame-index 48 frame-w 32  inset 5 ;; hardcoded for now, or forever

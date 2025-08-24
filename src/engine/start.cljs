@@ -40,23 +40,16 @@
   #_(events/listen js/window "mouseup"
                    (fn [event]
                      (swap! engine/*state assoc :mouse-button nil))))
-(defn keycode->keyname [keycode]
-  (condp = keycode
-    37 :left
-    38 :up
-    39 :right
-    40 :down
-    nil))
 
 (defn listen-for-keys []
   (events/listen js/window "keydown"
                  (fn [event]
-                   (when-let [keyname (keycode->keyname (.-keyCode event))]
+                   (when-let [keyname (input/js-keyCode->keyname (.-keyCode event))]
                      ;;  (swap! !panel-atom assoc :pressed-key (str keyname))
                      (swap! world/world* o/insert keyname ::input/pressed-key ::input/keydown))))
   (events/listen js/window "keyup"
                  (fn [event]
-                   (when-let [keyname (keycode->keyname (.-keyCode event))]
+                   (when-let [keyname (input/js-keyCode->keyname (.-keyCode event))]
                      (swap! world/world* o/insert keyname ::input/pressed-key ::input/keyup)))))
 
 

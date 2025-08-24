@@ -1,8 +1,12 @@
 (ns engine.world
   (:require
-   [odoyle.rules :as o]))
+   [odoyle.rules :as o]
+   [clojure.spec.alpha :as s]))
 
 (defonce world* (atom nil))
+
+(s/def ::init fn?)
+(s/def ::rules vector?) ;; maybe borrow spec from o'doyle later
 
 (defn rules-debugger-wrap-fn [rule]
   (o/wrap-rule rule
