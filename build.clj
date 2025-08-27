@@ -41,7 +41,7 @@
   (println "running desktop game with repl...")
   (let [cmd (b/java-command {:basis @basis-repl
                              :main  'clojure.main
-                             :main-args ["-m" "engine.start-dev"]})]
+                             :main-args ["-m" "start-dev"]})]
     (b/process cmd)))
 
 (defn jar [& _]

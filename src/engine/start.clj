@@ -69,7 +69,7 @@
 (defn on-char! [window codepoint])
 
 (defn on-resize! [_ width height]
-  (swap! world/world* 
+  (swap! world/world*
          (fn [w] (window/set-window w width height))))
 
 (defn on-scroll! [window xoffset yoffset])
@@ -133,26 +133,29 @@
        (invoke [this _window]
          (System/exit 0))))))
 
-(defn ->window []
-  (when-not (GLFW/glfwInit)
-    (throw (Exception. "Unable to initialize GLFW")))
-  (GLFW/glfwWindowHint GLFW/GLFW_VISIBLE GLFW/GLFW_FALSE)
-  (GLFW/glfwWindowHint GLFW/GLFW_RESIZABLE GLFW/GLFW_TRUE)
-  (GLFW/glfwWindowHint GLFW/GLFW_CONTEXT_VERSION_MAJOR 3)
-  (GLFW/glfwWindowHint GLFW/GLFW_CONTEXT_VERSION_MINOR 3)
-  (GLFW/glfwWindowHint GLFW/GLFW_OPENGL_FORWARD_COMPAT GL33/GL_TRUE)
-  (GLFW/glfwWindowHint GLFW/GLFW_OPENGL_PROFILE GLFW/GLFW_OPENGL_CORE_PROFILE)
-  (if-let [window (GLFW/glfwCreateWindow 1024 768 "Hello, world!" 0 0)]
-    (do
-      (GLFW/glfwMakeContextCurrent window)
-      (GLFW/glfwSwapInterval 1)
-      (GL/createCapabilities)
-      (->Window window))
-    (throw (Exception. "Failed to create window"))))
+(defn ->window
+  ([] (->window false))
+  ([floating?]
+   (when-not (GLFW/glfwInit)
+     (throw (Exception. "Unable to initialize GLFW")))
+   (GLFW/glfwWindowHint GLFW/GLFW_VISIBLE GLFW/GLFW_FALSE)
+   (GLFW/glfwWindowHint GLFW/GLFW_RESIZABLE GLFW/GLFW_TRUE)
+   (GLFW/glfwWindowHint GLFW/GLFW_CONTEXT_VERSION_MAJOR 3)
+   (GLFW/glfwWindowHint GLFW/GLFW_CONTEXT_VERSION_MINOR 3)
+   (GLFW/glfwWindowHint GLFW/GLFW_OPENGL_FORWARD_COMPAT GL33/GL_TRUE)
+   (GLFW/glfwWindowHint GLFW/GLFW_OPENGL_PROFILE GLFW/GLFW_OPENGL_CORE_PROFILE)
+   (if-let [window (GLFW/glfwCreateWindow 1024 768 "Hello, world!" 0 0)]
+     (do
+       (GLFW/glfwMakeContextCurrent window)
+       (GLFW/glfwSwapInterval 1)
+       (GL/createCapabilities)
+       (when floating? (GLFW/glfwSetWindowAttrib window GLFW/GLFW_FLOATING GLFW/GLFW_TRUE))
+       (->Window window))
+     (throw (Exception. "Failed to create window")))))
 
 (defn start
   ([game window] (start game window nil))
-  ([game window {::keys [init-fn frame-fn destroy-fn]}]
+  ([game window {::keys [init-fn frame-fn destroy-fn stop-flag*]}]
    (let [handle (:handle window)
          game (assoc game :delta-time 0 :total-time (* (GLFW/glfwGetTime) 1000))]
      (GLFW/glfwShowWindow handle)
@@ -161,7 +164,8 @@
      (when init-fn (init-fn window))
      (try
        (loop [game game]
-         (when-not (GLFW/glfwWindowShouldClose handle)
+         (when-not (or (GLFW/glfwWindowShouldClose handle)
+                       (and (some? stop-flag*) @stop-flag*))
            (let [ts (* (GLFW/glfwGetTime) 1000)
                  game (assoc game
                              :delta-time (- ts (:total-time game))
