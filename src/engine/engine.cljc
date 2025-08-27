@@ -50,7 +50,6 @@
            dialogues/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
-
 (defn init [game]
   (gl game enable (gl game BLEND))
   (gl game blendFunc (gl game SRC_ALPHA) (gl game ONE_MINUS_SRC_ALPHA))

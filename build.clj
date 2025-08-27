@@ -1,5 +1,5 @@
 (ns build
-  (:require 
+  (:require
    [clojure.tools.build.api :as b]))
 
 (def game 'berkelana-clj)
@@ -7,7 +7,8 @@
 (def class-dir "target/classes")
 (def jar-file (format "target/%s-%s.jar" (name game) version))
 
-(def basis (delay (b/create-basis {:project "deps.edn"})))
+(def basis (delay (b/create-basis {:project "deps.edn" :aliases [:jvm]})))
+(def basis-repl (delay (b/create-basis {:project "deps.edn" :aliases [:jvm :repl]})))
 
 (defn clean [& _]
   (println "cleaning target...")
@@ -24,6 +25,21 @@
   (compile-java)
   (println "running desktop game...")
   (let [cmd (b/java-command {:basis @basis
+                             :main  'clojure.main
+                             :main-args ["-m" "engine.start"]})]
+    (b/process cmd)))
+
+(defn compile-java-repl [& _]
+  (clean)
+  (println "compiling java for repl...")
+  (b/javac {:src-dirs ["java"]
+            :class-dir class-dir
+            :basis @basis-repl}))
+
+(defn repl [& _]
+  ;; (compile-java-repl)
+  (println "running desktop game with repl...")
+  (let [cmd (b/java-command {:basis @basis-repl
                              :main  'clojure.main
                              :main-args ["-m" "engine.start-dev"]})]
     (b/process cmd)))

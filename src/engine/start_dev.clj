@@ -1,11 +1,15 @@
 (ns engine.start-dev
-  (:require [engine.start :as start]
-            [clojure.spec.test.alpha :as st]
-            [play-cljc.gl.core :as pc])
-  (:import (gui Hello ImGuiImplGlfw ImGuiImplGl3)
-           (imgui ImGui)
-           (imgui.flag ImGuiConfigFlags)
-           (org.lwjgl.glfw GLFW)))
+  (:require
+   [clojure.spec.test.alpha :as st]
+   [engine.start :as start]
+   [play-cljc.gl.core :as pc])
+  (:import
+   (gui Hello)
+   (imgui ImGui)
+   (imgui.flag ImGuiConfigFlags)
+   (imgui.gl3 ImGuiImplGl3)
+   (imgui.glfw ImGuiImplGlfw)
+   (org.lwjgl.glfw GLFW)))
 
 ;; https://github.com/codingminecraft/IntegratingImGui
 (defn imgui-init [imguiGlfw imGuiGl3 window]
@@ -37,8 +41,8 @@
     (GLFW/glfwMakeContextCurrent backupWindowPtr)))
 
 (defn imgui-destroy [imguiGlfw imGuiGl3]
-  (.dispose imGuiGl3)
-  (.dispose imguiGlfw)
+  (.shutdown imGuiGl3)
+  (.shutdown imguiGlfw)
   (ImGui/destroyContext))
 
 (defn start []
