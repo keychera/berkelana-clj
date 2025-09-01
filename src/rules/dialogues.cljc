@@ -31,7 +31,7 @@
            (=float a (min (.a tex) 0.9))
            (= o_color (vec4 (.rgb tex) a)))}})
 
-(defonce dialogue-instance* (atom nil))
+(s/def ::dialogue-instances* #(instance? #?(:clj clojure.lang.Atom :cljs Atom) %))
 
 (defn init-asset [game db*]
   (let [asset-id  :asset/berkelana
@@ -39,7 +39,7 @@
         dialogue-instanced
         (c/compile game (-> (instances/->instanced-entity raw-image)
                             (assoc :fragment dialogue-box-frag-shader)))]
-    (reset! dialogue-instance*
+    (reset! (::dialogue-instances* game)
             {::raw raw-image
              ::instanced dialogue-instanced})))
 
@@ -47,8 +47,6 @@
   ["it's okay now"
    "It's all gone"
    "You can be yourself again"])
-
-(subvec script 0 (mod 6 (inc (count script))))
 
 (s/def ::delay-ms number?)
 
@@ -68,7 +66,7 @@
       [::world/global ::world/game game]
       [::asset/global ::asset/db* db*]
       :then
-      (when (nil? @dialogue-instance*)
+      (when (nil? @(::dialogue-instances* game))
         (init-asset game db*))]
 
      ::progress-delay
@@ -88,8 +86,7 @@
       (when (<= delay-ms 0)
         (s-> session
              (o/insert ::this ::delay-ms 50)
-             (o/insert ::texts/test ::texts/counter (inc counter))))
-      (println "hey" counter)]})})
+             (o/insert ::texts/test ::texts/counter (inc counter))))]})})
 
 (type (::world/rules system))
 
@@ -146,11 +143,11 @@
     [center left l+u up u+r right r+d down d+l]))
 
 (defn render [game world camera game-width game-height]
-  (when (some? (::raw @dialogue-instance*))
+  (when (some? (::raw @(::dialogue-instances* game)))
     (let [;; require frame to be square 
           {:keys [x y]} (first (o/query-all world ::ubim/ubim-esse))
           {:keys [texts cnt]} (first (o/query-all world ::texts/counter))
-          {::keys [raw instanced]} @dialogue-instance*
+          {::keys [raw instanced]} @(::dialogue-instances* game)
           width 64 height 18 pos-x 2 pos-y -30
           nine-patch (nine-patch raw camera width height (+ x pos-x) (+ y pos-y))]
       (when (> (mod cnt (inc (count texts))) 0)

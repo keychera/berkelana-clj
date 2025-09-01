@@ -14,7 +14,7 @@
 
 ;; from example play-cljc-examples/ui-gallery/src/ui_gallery
 
-(defonce font-entities* (atom {}))
+(s/def ::font-instances* #(instance? #?(:clj clojure.lang.Atom :cljs Atom) %))
 
 (s/def ::counter int?)
 (s/def ::texts vector?)
@@ -37,14 +37,14 @@
    (fn [{:keys [data]} baked-font]
      (let [font-entity (gl-text/->font-entity game data baked-font)
            dynamic-entity (c/compile game (i/->instanced-entity font-entity))]
-       (swap! font-entities* assoc
+       (swap! (::font-instances* game) assoc
               :font-entity font-entity
               :dynamic-entity dynamic-entity)))))
 
 (defn render [game world camera game-width game-height]
   (let [{:keys [x y]} (first (o/query-all world ::ubim/ubim-esse))
         {:keys [texts cnt]} (first (o/query-all world ::counter))
-        {:keys [font-entity dynamic-entity]} @font-entities*]
+        {:keys [font-entity dynamic-entity]} @(::font-instances* game)]
     (when (and font-entity dynamic-entity texts)
       (let [text (subvec texts 0 (mod cnt (inc (count texts))))]
         (c/render game (-> (reduce

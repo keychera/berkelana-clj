@@ -50,8 +50,6 @@
                   ;; (println :then-finally (:name rule))
                   (f session))}))
 
-(defonce ^:devonly previous-rules (atom nil))
-
 (defn init-world [game world all-rules reload-fns]
   (let [prev-rules* (::prev-rules* game)
         init-only?  (nil? world)
@@ -63,7 +61,7 @@
                         (->> @prev-rules* ;; devonly : refresh rules without resetting facts
                              (map :name)
                              (reduce o/remove-rule world))))]
-    (reset! previous-rules all-rules)
+    (reset! prev-rules* all-rules)
     (-> (->> all-rules
              (map #'rules-debugger-wrap-fn)
              (reduce o/add-rule session))

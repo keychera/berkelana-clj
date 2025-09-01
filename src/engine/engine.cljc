@@ -50,9 +50,11 @@
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
 (defn ->game []
-  {::world/atom*       (atom nil)
-   ::world/prev-rules* (atom nil) ;; this is dev-only
-   ::assets/db*        (atom {})})
+  {::world/atom*                   (atom nil)
+   ::world/prev-rules*             (atom nil)   ;; this is dev-only
+   ::assets/db*                    (atom {})
+   ::texts/font-instances*         (atom {})
+   ::dialogues/dialogue-instances* (atom nil)})
 
 (defn init [game]
   (gl game enable (gl game BLEND))
@@ -63,10 +65,9 @@
         all-init    (sp/select [sp/ALL ::world/init-fn some?] all-systems)
         reload-fns  (sp/select [sp/ALL ::world/reload-fn some?] all-systems)]
     (swap! (::world/atom* game)
-           (fn [world] 
+           (fn [world]
              (-> (world/init-world game world all-rules reload-fns)
-                 (as-> w (reduce (fn [w init-fn] 
-                                   (println "hello")
+                 (as-> w (reduce (fn [w init-fn]
                                    (init-fn game w)) w all-init))
                  (window/set-window game-width game-height)
                  (chapter1/init first-init?)
@@ -103,7 +104,6 @@
          #?(:clj (catch Exception err (throw err))
             :cljs (catch js/Error err (log-once game "init-error" err))))
     (try
-      (log-once "tick")
       (let [{:keys [delta-time total-time]} game
             world (swap! (::world/atom* game)
                          #(-> %
