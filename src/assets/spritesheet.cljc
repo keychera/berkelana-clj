@@ -13,7 +13,7 @@
 (s/def ::frame-height int?)
 
 (defmethod asset/process-asset ::asset/spritesheet
-  [game db* asset-id {::asset/keys [img-to-load]}]
+  [game asset-id {::asset/keys [img-to-load]}]
   (utils/get-image
    img-to-load
    (fn [{:keys [data width height]}]
@@ -21,6 +21,6 @@
            instanced (c/compile game (instances/->instanced-entity raw))
            instanced (assoc instanced :width width :height height)]
        (println "loaded spritesheet asset from" img-to-load)
-       (swap! db* assoc-in [asset-id ::raw] raw)
-       (swap! db* assoc-in [asset-id ::instanced] instanced)
-       (swap! world/world* #(-> % (o/insert asset-id ::asset/loaded? true)))))))
+       (swap! (::asset/db* game) assoc-in [asset-id ::raw] raw)
+       (swap! (::asset/db* game) assoc-in [asset-id ::instanced] instanced)
+       (swap! (::world/atom* game) #(-> % (o/insert asset-id ::asset/loaded? true)))))))

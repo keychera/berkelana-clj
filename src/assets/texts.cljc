@@ -1,7 +1,7 @@
 (ns assets.texts
   (:require
    #?(:clj [assets.on-compile.fonts :as fonts :refer [load-font-clj]]
-      :cljs [assets.on-compile.fonts :as fonts :refer-macros [load-font-cljs]]) 
+      :cljs [assets.on-compile.fonts :as fonts :refer-macros [load-font-cljs]])
    [assets.chars :as chars]
    [clojure.spec.alpha :as s]
    [engine.world :as world]
@@ -19,8 +19,12 @@
 (s/def ::counter int?)
 (s/def ::texts vector?)
 
-(def system
-  {::world/rules
+(world/system system
+  {::world/init-fn
+   (fn [_game world]
+     (o/insert  world ::test ::counter 0))
+
+   ::world/rules
    (o/ruleset
     {::counter
      [:what

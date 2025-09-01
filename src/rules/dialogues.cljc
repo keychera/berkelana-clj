@@ -45,7 +45,6 @@
             {::raw raw-image
              ::instanced dialogue-instanced})))
 
-
 (def script
   ["it's okay now"
    "It's all gone"
@@ -55,9 +54,9 @@
 
 (s/def ::delay-ms number?)
 
-(def system
-  {::world/init
-   (fn [world]
+(world/system system
+  {::world/init-fn
+   (fn [_game world]
      (-> world
          (o/insert ::this ::delay-ms 0)
          (o/insert ::texts/test ::texts/counter 0)

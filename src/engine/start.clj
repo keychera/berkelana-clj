@@ -181,6 +181,6 @@
          (GLFW/glfwDestroyWindow handle)
          (GLFW/glfwTerminate))))))
 
-(defn -main [& args]
+(defn -main []
   (let [window (->window)]
-    (start (pc/->game (:handle window)) window)))
+    (start (merge (pc/->game (:handle window)) (engine/->game)) window)))

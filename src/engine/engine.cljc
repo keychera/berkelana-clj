@@ -6,6 +6,8 @@
    [assets.assets :as assets]
    [assets.texts :as texts]
    [assets.tiled :as tiled]
+   [clojure.spec.alpha :as s]
+   [com.rpl.specter :as sp]
    [engine.context :as context]
    [engine.refresh :refer [*refresh?]]
    [engine.utils :as utils]
@@ -17,17 +19,16 @@
    [rules.camera :as camera]
    [rules.dev.dev-only :as dev-only]
    [rules.dialogues :as dialogues]
+   [rules.grid-move :as grid-move]
+   [rules.input :as input]
    [rules.shader :as shader]
    [rules.time :as time]
    [rules.ubim :as ubim]
-   [rules.window :as window]
-   [rules.grid-move :as grid-move]
-   [rules.input :as input]
-   [com.rpl.specter :as sp]))
+   [rules.window :as window]))
 
-(defn compile-all [game world first-init?]
+(defn compile-all [game first-init?]
   (shader/load-shader game)
-  (assets/load-asset game world)
+  (assets/load-asset game)
   (when first-init? (texts/init game)))
 
 (def all-rules-legacy-abstraction
@@ -42,7 +43,6 @@
    #?(:cljs leva-rules/rules)
    dev-only/rules])
 
-
 (def all-systems
   ;; gonna refactor everything to this
   (concat [assets/system
@@ -50,23 +50,30 @@
            dialogues/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
+(defn ->game []
+  {::world/atom*       (atom nil)
+   ::world/prev-rules* (atom nil) ;; this is dev-only
+   ::assets/db*        (atom {})})
+
 (defn init [game]
   (gl game enable (gl game BLEND))
   (gl game blendFunc (gl game SRC_ALPHA) (gl game ONE_MINUS_SRC_ALPHA))
   (let [[game-width game-height] (utils/get-size game)
-        first-init? (nil? @world/world*)
-        all-rules (apply concat (sp/select [sp/ALL ::world/rules] all-systems))
-        all-init  (sp/select [sp/ALL ::world/init some?] all-systems)]
+        first-init? (nil? @(::world/atom* game))
+        all-rules   (apply concat (sp/select [sp/ALL ::world/rules] all-systems))
+        all-init    (sp/select [sp/ALL ::world/init-fn some?] all-systems)
+        reload-fns  (sp/select [sp/ALL ::world/reload-fn some?] all-systems)]
     (reset! context/game* game)
-    (swap! world/world*
-           (fn [world]
-             (-> (world/init-world world all-rules)
-                 (o/insert ::texts/test ::texts/counter 0)
-                 (as-> w (reduce (fn [w init-fn] (init-fn w)) w all-init))
+    (swap! (::world/atom* game)
+           (fn [world] 
+             (-> (world/init-world game world all-rules reload-fns)
+                 (as-> w (reduce (fn [w init-fn] 
+                                   (println "hello")
+                                   (init-fn game w)) w all-init))
                  (window/set-window game-width game-height)
                  (chapter1/init first-init?)
                  (o/fire-rules))))
-    (compile-all game @world/world* first-init?)))
+    (compile-all game first-init?)))
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
@@ -74,18 +81,33 @@
 
 (def camera (e/->camera true))
 
+(defn make-limited-logger [limit]
+  (let [counter (atom 0)]
+    (fn [game & args]
+      (let [game-passed? (s/valid? ::world/atom* game)
+            messages     (if game-passed? (apply str args) (apply str game args))]
+        (when (< @counter limit)
+          (println messages)
+          (when game-passed?
+            (swap! (::world/atom* game) #(-> % (dev-only/warn messages))))
+          (swap! counter inc))
+        (when (= @counter limit)
+          (println "[SUPRESSED]" messages)
+          (swap! counter inc))))))
+
+(def log-once (make-limited-logger 4))
+
 (defn tick [game]
   (if @*refresh?
     (try (println "calling (init game)")
          (swap! *refresh? not)
          (init game)
-         (catch #?(:clj Exception :cljs js/Error) err
-           (swap! world/world* #(-> % (dev-only/warn (str "init error " err))))
-           #?(:clj  (println err)
-              :cljs (js/console.error err))))
+         #?(:clj (catch Exception err (throw err))
+            :cljs (catch js/Error err (log-once game "init-error" err))))
     (try
+      (log-once "tick")
       (let [{:keys [delta-time total-time]} game
-            world (swap! world/world*
+            world (swap! (::world/atom* game)
                          #(-> %
                               (time/insert total-time delta-time)
                               o/fire-rules))
@@ -95,13 +117,11 @@
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))
-          (tiled/render-tiled-map game world camera game-width game-height)
-          ;; (ubim/render game world camera game-width game-height)
+          (tiled/render-tiled-map game camera game-width game-height)
+          (ubim/render game world camera game-width game-height)
           (dialogues/render game world camera game-width game-height)
           (texts/render game world camera game-width game-height)
           (shader/render-shader-esses game world game-width game-height)))
-      (catch #?(:clj Exception :cljs js/Error) err
-        (swap! world/world* #(-> % (dev-only/warn (str "tick error " err))))
-        #?(:clj  (println err)
-           :cljs (js/console.error err)))))
+      #?(:clj (catch Exception err (throw err))
+         :cljs (catch js/Error err (log-once game "tick-error" err)))))
   game)

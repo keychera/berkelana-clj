@@ -13,10 +13,11 @@
 (s/def ::loaded? boolean?)
 (s/def ::db* #(instance? #?(:clj clojure.lang.Atom :cljs Atom) %))
 
-(def system
-  {::world/init
-   (fn [world]
-     (o/insert world ::global ::db* (atom {})))
+(world/system system
+  {::world/init-fn
+   (fn [game world]
+     (println game)
+     (o/insert world ::global ::db* (::db* game)))
 
    ::world/rules
    (o/ruleset
@@ -26,15 +27,14 @@
      ::to-load
      [:what [asset-id ::loaded? loaded]]})})
 
-(defmulti process-asset (fn [_game _db* _asset-id asset-data] (::type asset-data)))
+(defmulti process-asset (fn [_game _asset-id asset-data] (::type asset-data)))
 
 (defmethod process-asset :default
-  [_game _db* asset-id {:keys [asset-type] :as _asset_data}]
+  [_game asset-id {:keys [asset-type] :as _asset_data}]
   (println "asset(" asset-id ") has unhandled type (" asset-type ")"))
 
-(defn load-asset [game world]
-  (let [db* (:db* (first (o/query-all world ::db*)))]
-    (doseq [{:keys [asset-id]} (o/query-all @world/world* ::to-load)]
-      (let [asset-data (get @db* asset-id)]
-        (println "loading" (::type asset-data) "asset for" asset-id)
-        (process-asset game db* asset-id asset-data)))))
+(defn load-asset [game]
+  (doseq [{:keys [asset-id]} (o/query-all @(::world/atom* game) ::to-load)]
+    (let [asset-data (get @(::db* game) asset-id)]
+      (println "loading" (::type asset-data) "asset for" asset-id)
+      (process-asset game asset-id asset-data))))

@@ -24,10 +24,10 @@
 (defmulti on-leva-change (fn [k _old _new] k))
 
 (defmethod on-leva-change :rotation [_ _ new']
-  (swap! world/world* o/insert ::leva-rules/leva-spritesheet ::leva-rules/rotation new'))
+  (swap! start/world-queue conj (fn leva-rotation [w] (o/insert w ::leva-rules/leva-spritesheet ::leva-rules/rotation new'))))
 
 (defmethod on-leva-change :scale [_ _ new']
-  (swap! world/world* o/insert ::leva-rules/leva-spritesheet ::leva-rules/scale new'))
+  (swap! start/world-queue conj (fn leva-scale [w] (o/insert w ::leva-rules/leva-spritesheet ::leva-rules/scale new'))))
 
 (defmethod on-leva-change :default [_k _old' _new']
   #_(println k old' new'))
@@ -67,7 +67,7 @@
    [leva/Controls
     {:folder {:name "Dev"}
      :atom   dev-atom*
-     :schema {:dev-value {:order 0} 
+     :schema {:dev-value {:order 0}
               :upper     {:order 1}
               :center    {:order 2}
               :lower     {:order 3}}}]
@@ -81,28 +81,27 @@
 
 (def !hud-visible (atom false))
 
-(defn listen-to-dev-events! []
-  (let [warning (first (o/query-all @world/world* ::dev-only/warning))]
-    (if (some? warning)
-      (when (not @!hud-visible)
-        (hud/hud-warnings {:info {:sources [{:warnings [{:resource-name "code"
-                                                         :msg (:message warning)
-                                                         :source-excerpt "what to pass here?"}]}]}})
-        (reset! !hud-visible true))
-      (when @!hud-visible
-        (dom/remove (dom/by-id hud/hud-id))
-        (reset! !hud-visible false)))
-    (if-let [dev-value (first (o/query-all @world/world* ::dev-only/dev-value))]
-      (swap! dev-atom* assoc :dev-value (pr-str (:value dev-value)))
-      (swap! dev-atom* assoc :dev-value "raw value"))))
+(defn listen-to-dev-events! [game]
+  (if-let [warning (first (o/query-all @(::world/atom* game) ::dev-only/warning))]
+    (when (not @!hud-visible)
+      (hud/hud-warnings {:info {:sources [{:warnings [{:resource-name "code"
+                                                       :msg (:message warning)
+                                                       :source-excerpt "what to pass here?"}]}]}})
+      (reset! !hud-visible true))
+    (when @!hud-visible
+      (dom/remove (dom/by-id hud/hud-id))
+      (reset! !hud-visible false)))
+  (if-let [dev-value (first (o/query-all @(::world/atom* game) ::dev-only/dev-value))]
+    (swap! dev-atom* assoc :dev-value (:value dev-value))
+    (swap! dev-atom* assoc :dev-value 0)))
 
-(defn dev-loop []
+(defn dev-loop [game]
   (update-fps!)
-  (listen-to-dev-events!))
+  (listen-to-dev-events! game))
 
 (defonce dev-only
   (do (run-reagent)
-      (start/-main dev-loop)))
+      (start/-main {:callback-fn dev-loop})))
 
 (comment
   (dom/remove (dom/by-id hud/hud-id))

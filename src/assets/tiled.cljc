@@ -187,7 +187,7 @@
              objects-content))
 
 (defmethod asset/process-asset ::asset/tiledmap
-  [game db* asset-id {::keys [parsed-tmx]}]
+  [game asset-id {::keys [parsed-tmx]}]
   (let [home-path      (:home-path parsed-tmx)
         map-width      (-> parsed-tmx :attrs :width)
         map-height     (-> parsed-tmx :attrs :height)
@@ -221,12 +221,12 @@
                                            [id {::layer-name name ::objects (parse-objects-content content)}]))]
                         parsed-tmx)
              (into {}))]
-    (swap! world/world*
+    (swap! (::world/atom* game)
            #(reduce (fn [w t]
                       (-> w
                           (o/insert (:name t) ::tilesets-loaded? false)
                           (o/insert (:name t) ::for asset-id))) % tilesets))
-    (swap! db*
+    (swap! (::asset/db* game)
            (fn [db] (assoc db asset-id (assoc (vars->map layers objectgroup map-width map-height)
                                               :firstgids (->> tilesets (mapv :firstgid) (sort >))))))
 
@@ -238,14 +238,13 @@
                loaded-image (assoc image-entity :width width :height height)
                tileset      (assoc tileset :entity loaded-image)]
            (println "loaded tileset asset from" (-> tileset :image :source))
-           (swap! db* #(-> %  (assoc-in [asset-id :firstgid->tileset (:firstgid tileset)] tileset)))
-           (swap! world/world* #(-> %
-                                    (o/insert (:name tileset) ::tilesets-loaded? true)
-                                    (o/fire-rules)))))))))
+           (swap! (::asset/db* game) #(-> %  (assoc-in [asset-id :firstgid->tileset (:firstgid tileset)] tileset)))
+           (swap! (::world/atom* game) #(-> %
+                                            (o/insert (:name tileset) ::tilesets-loaded? true)
+                                            (o/fire-rules)))))))))
 
-(defn render-tiled-map [game world camera game-width game-height]
-  (let [db* (:db* (first (o/query-all world ::asset/db*)))
-        {:keys [::firstgid->entity]} (get @db* :asset/worldmap)
+(defn render-tiled-map [game camera game-width game-height]
+  (let [{:keys [::firstgid->entity]} (get @(::asset/db* game) :asset/worldmap)
         tile-size (-> firstgid->entity (get 1) :tile-size)]
     (doseq [[_ entity] (->> firstgid->entity (sort-by (fn [[gid _v]] gid)))]
       (c/render game (-> (:entity entity)
@@ -263,7 +262,7 @@
                   [{:attrs {:name "unwalkable", :type "bool", :value "true"}, :content (), :tag :property}],
                   :tag :properties}],
        :tag :tile})
-     [48 {:unwalkable true}]) 
+     [48 {:unwalkable true}])
 
   (let [objects [{:attrs {:gid 454, :height 16, :id 28, :name "Bucket", :width 16, :x 48, :y 96},
                   :content [{:attrs {},
