@@ -49,12 +49,14 @@
            dialogues/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
-(defn ->game []
-  {::world/atom*                   (atom nil)
-   ::world/prev-rules*             (atom nil)   ;; this is dev-only
-   ::assets/db*                    (atom {})
-   ::texts/font-instances*         (atom {})
-   ::dialogues/dialogue-instances* (atom nil)})
+(defn ->game [context]
+  (merge
+   (c/->game context)
+   {::world/atom*                   (atom nil)
+    ::world/prev-rules*             (atom nil)   ;; this is dev-only
+    ::assets/db*                    (atom {})
+    ::texts/font-instances*         (atom {})
+    ::dialogues/dialogue-instances* (atom nil)}))
 
 (defn init [game]
   (gl game enable (gl game BLEND))

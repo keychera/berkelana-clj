@@ -2,11 +2,11 @@
   (:require
    [cider.nrepl :refer [cider-nrepl-handler]]
    [clojure.spec.test.alpha :as st]
+   [engine.engine :as engine]
    [engine.refresh :as refresh]
    [engine.start :as start]
    [gui.debug-ui :as debug-ui]
-   [nrepl.server :as nrepl-server]
-   [play-cljc.gl.core :as pc])
+   [nrepl.server :as nrepl-server])
   (:import
    (gui Hello)
    (imgui.gl3 ImGuiImplGl3)
@@ -25,7 +25,7 @@
   (st/instrument)
   (reset! stop-flag* false)
   (let [window (start/->window true)
-        game (pc/->game (:handle window))
+        game   (engine/->game (:handle window))
         imguiGlfw (ImGuiImplGlfw.) imGuiGl3 (ImGuiImplGl3.)
         callback #::start{:init-fn (partial debug-ui/init imguiGlfw imGuiGl3)
                           :frame-fn (partial debug-ui/frame imguiGlfw imGuiGl3)
@@ -45,5 +45,5 @@
 (comment
   (refresh)
   (stop) ;; game won't load properly on the second start
-  
+
   ::waiting-for-something-to-happen?)

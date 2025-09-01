@@ -21,6 +21,13 @@
    [org.lwjgl.system MemoryUtil])
   (:gen-class))
 
+(defonce world-queue (atom clojure.lang.PersistentQueue/EMPTY))
+(defn update-world [game]
+  (when (seq @world-queue)
+    (let [world-fn (peek @world-queue)]
+      (swap! world-queue pop)
+      (swap! (::world/atom* game) world-fn))))
+
 (defn mousecode->keyword [mousecode]
   (condp = mousecode
     GLFW/GLFW_MOUSE_BUTTON_LEFT :left
@@ -46,7 +53,7 @@
     (MemoryUtil/memFree *fb-height)
     (MemoryUtil/memFree *window-width)
     (MemoryUtil/memFree *window-height)
-    (swap! world/world* o/insert ::input/mouse {::input/x x ::input/y y})))
+    (swap! world-queue conj (fn on-mouse-move [w] (o/insert w ::input/mouse {::input/x x ::input/y y})))))
 
 (defn on-mouse-click! [window button action mods])
 
@@ -62,15 +69,14 @@
 (defn on-key! [window keycode scancode action mods]
   (when-let [keyname (keycode->keyword keycode)]
     (condp = action
-      GLFW/GLFW_PRESS (swap! world/world* o/insert keyname ::input/pressed-key ::input/keydown)
-      GLFW/GLFW_RELEASE (swap! world/world* o/insert keyname ::input/pressed-key ::input/keyup)
+      GLFW/GLFW_PRESS (swap! world-queue conj (fn on-press [w] (o/insert w keyname ::input/pressed-key ::input/keydown)))
+      GLFW/GLFW_RELEASE (swap! world-queue conj (fn on-release [w] (o/insert w keyname ::input/pressed-key ::input/keyup)))
       nil)))
 
 (defn on-char! [window codepoint])
 
 (defn on-resize! [_ width height]
-  (swap! world/world*
-         (fn [w] (window/set-window w width height))))
+  (swap! world-queue conj (fn on-resize [w] (window/set-window w width height))))
 
 (defn on-scroll! [window xoffset yoffset])
 
@@ -100,6 +106,7 @@
   (on-scroll [{:keys [handle]} xoffset yoffset]
     (on-scroll! handle xoffset yoffset))
   (on-tick [this game]
+    (update-world game)
     (engine/tick game)))
 
 (defn listen-for-events [{:keys [handle] :as window}]
@@ -183,4 +190,4 @@
 
 (defn -main []
   (let [window (->window)]
-    (start (merge (pc/->game (:handle window)) (engine/->game)) window)))
+    (start (engine/->game (:handle window)) window)))

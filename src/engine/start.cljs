@@ -81,8 +81,7 @@
   ([callback-config]
    (let [canvas (js/document.querySelector "canvas")
          context (.getContext canvas "webgl2" (clj->js {:alpha false}))
-         initial-game (assoc (merge (pc/->game context)
-                                    (engine/->game))
+         initial-game (assoc (engine/->game context)
                              :delta-time 0
                              :total-time (js/performance.now))]
      (engine/init initial-game)
