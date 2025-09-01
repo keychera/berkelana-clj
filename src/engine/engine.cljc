@@ -3,7 +3,7 @@
    #?(:clj  [play-cljc.macros-java :refer [gl]]
       :cljs [play-cljc.macros-js :refer-macros [gl]])
    #?(:cljs [rules.dev.leva-rules :as leva-rules])
-   [assets.assets :as asset]
+   [assets.assets :as assets]
    [assets.texts :as texts]
    [assets.tiled :as tiled]
    [engine.context :as context]
@@ -25,9 +25,9 @@
    [rules.input :as input]
    [com.rpl.specter :as sp]))
 
-(defn compile-all [game first-init?]
+(defn compile-all [game world first-init?]
   (shader/load-shader game)
-  (asset/load-asset game)
+  (assets/load-asset game world)
   (when first-init? (texts/init game)))
 
 (def all-rules-legacy-abstraction
@@ -35,7 +35,6 @@
    camera/rules
    time/rules
    input/rules
-   asset/rules
    tiled/rules
    grid-move/rules
    shader/rules
@@ -46,7 +45,8 @@
 
 (def all-systems
   ;; gonna refactor everything to this
-  (concat [texts/system
+  (concat [assets/system
+           texts/system
            dialogues/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
@@ -66,7 +66,7 @@
                  (window/set-window game-width game-height)
                  (chapter1/init first-init?)
                  (o/fire-rules))))
-    (compile-all game first-init?)))
+    (compile-all game @world/world* first-init?)))
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
@@ -95,8 +95,8 @@
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))
-          (tiled/render-tiled-map game camera game-width game-height)
-          (ubim/render game world camera game-width game-height)
+          (tiled/render-tiled-map game world camera game-width game-height)
+          ;; (ubim/render game world camera game-width game-height)
           (dialogues/render game world camera game-width game-height)
           (texts/render game world camera game-width game-height)
           (shader/render-shader-esses game world game-width game-height)))

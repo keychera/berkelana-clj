@@ -34,10 +34,10 @@
 
 (defonce dialogue-instance* (atom nil))
 
-(defn init-asset []
+(defn init-asset [db*]
   (let [game      @context/game*
         asset-id  :asset/berkelana
-        raw-image (::spritesheet/raw (get @asset/db* asset-id))
+        raw-image (::spritesheet/raw (get @db* asset-id))
         dialogue-instanced
         (c/compile game (-> (instances/->instanced-entity raw-image)
                             (assoc :fragment dialogue-box-frag-shader)))]
@@ -68,9 +68,10 @@
     {::prep-dialogue-box
      [:what
       [:asset/berkelana ::asset/loaded? true]
+      [::asset/global ::asset/db* db*]
       :then
       (when (nil? @dialogue-instance*)
-        (init-asset))]
+        (init-asset db*))]
 
      ::progress-delay
      [:what

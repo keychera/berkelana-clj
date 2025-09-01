@@ -8,10 +8,11 @@
 ;; because play-cljc used the word entity that I am not yet sure if it can be conflated or not
 
 (defn esse
-  [session esse-id & maps]
-  (o/insert session esse-id (apply deep-merge maps)))
+  [world esse-id & maps]
+  (o/insert world esse-id (apply deep-merge maps)))
 
 (defn asset
-  [session asset-id & maps]
-  (swap! asset/db* assoc asset-id (apply deep-merge maps))
-  (o/insert session asset-id ::asset/loaded? false))
+  [world asset-id & maps]
+  (let [db* (:db* (first (o/query-all world ::asset/db*)))]
+    (swap! db* assoc asset-id (apply deep-merge maps)))
+  (o/insert world asset-id ::asset/loaded? false))

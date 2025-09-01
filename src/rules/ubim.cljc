@@ -58,8 +58,9 @@
 
 (defn render [game world camera game-width game-height]
   (when-let [sprite-esse (first (o/query-all world ::ubim-esse))]
-    (let [{:keys [x y asset-id frame-index]} sprite-esse
-          {::spritesheet/keys [raw instanced frame-height frame-width]} (get @asset/db* asset-id)
+    (let [db* (:db* (first (o/query-all world ::asset/db*)))
+          {:keys [x y asset-id frame-index]} sprite-esse
+          {::spritesheet/keys [raw instanced frame-height frame-width]} (get @db* asset-id)
           frames-per-row (/ (:width instanced) frame-width)
           frame-x (mod frame-index frames-per-row)
           frame-y (quot frame-index frames-per-row)

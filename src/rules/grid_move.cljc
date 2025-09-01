@@ -48,13 +48,14 @@
      [esse-id ::pos-x pos-x {:then false}]
      [esse-id ::pos-y pos-y {:then false}]
      [esse-id ::move-delay move-delay {:then false}]
+     [::asset/global ::asset/db* db*]
      :when
      (<= move-delay 0)
      (#{:left :right :up :down} keyname)
      :then
      (let [next-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
            next-y (case keyname :up   (dec pos-y) :down  (inc pos-y) pos-y)
-           unwalkable? (sp/select-one [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] @asset/db*)]
+           unwalkable? (sp/select-one [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] @db*)]
        (when (not unwalkable?)
          (s-> session
               (dev-only/send-dev-value [next-x next-y unwalkable?])
@@ -66,8 +67,9 @@
      [esse-id ::next-x next-x]
      [esse-id ::next-y next-y]
      [esse-id ::move-duration move-duration {:then false}]
+     [::asset/global ::asset/db* db*]
      :when
-     (let [[map-width map-height] (sp/select sp->map-dimension @asset/db*)]
+     (let [[map-width map-height] (sp/select sp->map-dimension @db*)]
        (not (or (< next-x 0) (< next-y 0) (> next-x (dec map-width)) (> next-y (dec map-height)))))
      :then
      (s-> session (o/insert esse-id {::pos-x next-x ::pos-y next-y ::move-delay move-duration}))]
