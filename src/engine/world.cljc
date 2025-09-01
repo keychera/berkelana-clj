@@ -8,6 +8,7 @@
 (s/def ::atom* (partial instance? #?(:clj clojure.lang.Atom :cljs Atom)))
 
 ;; game system
+(s/def ::game map?)
 (s/def ::init-fn   fn? #_(fn [game world] world))
 (s/def ::reload-fn fn? #_(fn [game world] world))
 
@@ -20,11 +21,12 @@
   (s/keys :req [::rules]
           :opt [::init-fn ::reload-fn]))
 
-(defmacro system [name m]
-  `(def ~name
-     (if (not (s/valid? ::system ~m))
-       (throw (ex-info (expound/expound-str ::system ~m) {}))
-       ~m)))
+#?(:clj
+   (defmacro system [name m]
+     `(def ~name
+        (if (not (s/valid? ::system ~m))
+          (throw (ex-info (expound/expound-str ::system ~m) {}))
+          ~m))))
 
 (defn rules-debugger-wrap-fn [rule]
   (o/wrap-rule rule
@@ -64,4 +66,5 @@
     (reset! previous-rules all-rules)
     (-> (->> all-rules
              (map #'rules-debugger-wrap-fn)
-             (reduce o/add-rule session)))))
+             (reduce o/add-rule session))
+        (o/insert ::global ::game game))))

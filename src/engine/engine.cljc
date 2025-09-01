@@ -8,7 +8,6 @@
    [assets.tiled :as tiled]
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as sp]
-   [engine.context :as context]
    [engine.refresh :refer [*refresh?]]
    [engine.utils :as utils]
    [engine.world :as world]
@@ -63,7 +62,6 @@
         all-rules   (apply concat (sp/select [sp/ALL ::world/rules] all-systems))
         all-init    (sp/select [sp/ALL ::world/init-fn some?] all-systems)
         reload-fns  (sp/select [sp/ALL ::world/reload-fn some?] all-systems)]
-    (reset! context/game* game)
     (swap! (::world/atom* game)
            (fn [world] 
              (-> (world/init-world game world all-rules reload-fns)

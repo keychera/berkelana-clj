@@ -6,7 +6,6 @@
    [assets.spritesheet :as spritesheet]
    [assets.texts :as texts]
    [clojure.spec.alpha :as s]
-   [engine.context :as context]
    [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
@@ -34,9 +33,8 @@
 
 (defonce dialogue-instance* (atom nil))
 
-(defn init-asset [db*]
-  (let [game      @context/game*
-        asset-id  :asset/berkelana
+(defn init-asset [game db*]
+  (let [asset-id  :asset/berkelana
         raw-image (::spritesheet/raw (get @db* asset-id))
         dialogue-instanced
         (c/compile game (-> (instances/->instanced-entity raw-image)
@@ -67,10 +65,11 @@
     {::prep-dialogue-box
      [:what
       [:asset/berkelana ::asset/loaded? true]
+      [::world/global ::world/game game]
       [::asset/global ::asset/db* db*]
       :then
       (when (nil? @dialogue-instance*)
-        (init-asset db*))]
+        (init-asset game db*))]
 
      ::progress-delay
      [:what

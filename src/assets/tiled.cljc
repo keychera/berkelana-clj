@@ -6,7 +6,6 @@
    [clojure.edn :as edn]
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as sp]
-   [engine.context :as context]
    [engine.utils :as utils]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
@@ -28,7 +27,7 @@
      (if (< id v) id (reduced v)))
    id firstgids))
 
-(defn load-tile-instances [db* asset-id]
+(defn load-tile-instances [game db* asset-id]
   (let [asset-data (get @db* asset-id)
         firstgid->tileset (:firstgid->tileset asset-data)
 
@@ -122,7 +121,7 @@
          #(-> %
               (assoc :i 0)
               (update :entity (fn [entity]
-                                (c/compile @context/game* (instances/->instanced-entity entity))))))
+                                (c/compile game (instances/->instanced-entity entity))))))
 
         firstgid->instanced-entity
         (reduce
@@ -146,6 +145,7 @@
     [:what
      [tileset-name ::tilesets-loaded? loaded?]
      [tileset-name ::for asset-id]
+     [::world/global ::world/game game]
      [::asset/global ::asset/db* db*]
      :then
      (let [to-load     (o/query-all session ::tilesets-to-load)
@@ -155,7 +155,7 @@
               (o/retract tileset-name ::tilesets-loaded?)
               (o/retract tileset-name ::for)
               (o/insert asset-id ::asset/loaded? true))
-         (load-tile-instances db* asset-id)))]}))
+         (load-tile-instances game db* asset-id)))]}))
 
 (defn parse-value-type [{:keys [value type]}]
   (case type
