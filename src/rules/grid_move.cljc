@@ -26,9 +26,9 @@
 (s/def ::next-y number?)
 (s/def ::move-delay number?)
 
-(def sp->layers->props (sp/path [:asset/worldmap ::tiled/tiled-map :layers (sp/multi-path "Structures" "Interactables")]))
-(def sp->map-dimension (sp/multi-path [:asset/worldmap ::tiled/tiled-map :map-width]
-                                      [:asset/worldmap ::tiled/tiled-map :map-height]))
+(def sp->layers->props (sp/path [:id/worldmap ::tiled/tiled-map :layers (sp/multi-path "Structures" "Interactables")]))
+(def sp->map-dimension (sp/multi-path [:id/worldmap ::tiled/tiled-map :map-width]
+                                      [:id/worldmap ::tiled/tiled-map :map-height]))
 
 (def rules
   (o/ruleset

@@ -17,8 +17,35 @@
 (def world-map-tmx
   (edn/read-string (read-tiled-map-on-compile "tiled143/world.tmx")))
 
+(declare load-tile-instances)
+
 (s/def ::tilesets-loaded? boolean?)
 (s/def ::for keyword?)
+
+(s/def ::objects-loaded? boolean?)
+(s/def ::object any?)
+
+(def rules
+  (o/ruleset
+   {::tilesets-to-load
+    [:what
+     [tileset-name ::tilesets-loaded? loaded?]
+     [tileset-name ::for asset-id]
+     [::world/global ::world/game game]
+     [::asset/global ::asset/db* db*]
+     :then
+     (let [to-load     (o/query-all session ::tilesets-to-load)
+           all-loaded? (reduce #(and (:loaded? %1) (:loaded? %2)) to-load)]
+       (when all-loaded?
+         (s-> session
+              (o/retract tileset-name ::tilesets-loaded?)
+              (o/retract tileset-name ::for)
+              (o/insert asset-id ::asset/loaded? true))
+         (load-tile-instances game db* asset-id)))]
+    
+    ::objects-loaded?
+    [:what
+     [::global ::objects-loaded? loaded?]]}))
 
 ;; gids is sorted descendingly
 (defn find-firstgid [id firstgids]
@@ -109,7 +136,7 @@
                   tile
                   (update :tiles conj tile)
                   tile
-                  (update :entities conj (t/translate (nth (:images tileset) localid) x y)))))
+                  (update :entities conj (t/translate (nth (:images tileset) localid) (inc x) y)))))
             tiled-map'
             objects))
          tiled-map
@@ -138,24 +165,6 @@
                                                  (dissoc :entities)
                                                  (merge (vars->map map-width map-height)))
                                  ::firstgid->entity firstgid->instanced-entity})))))
-
-(def rules
-  (o/ruleset
-   {::tilesets-to-load
-    [:what
-     [tileset-name ::tilesets-loaded? loaded?]
-     [tileset-name ::for asset-id]
-     [::world/global ::world/game game]
-     [::asset/global ::asset/db* db*]
-     :then
-     (let [to-load     (o/query-all session ::tilesets-to-load)
-           all-loaded? (reduce #(and (:loaded? %1) (:loaded? %2)) to-load)]
-       (when all-loaded?
-         (s-> session
-              (o/retract tileset-name ::tilesets-loaded?)
-              (o/retract tileset-name ::for)
-              (o/insert asset-id ::asset/loaded? true))
-         (load-tile-instances game db* asset-id)))]}))
 
 (defn parse-value-type [{:keys [value type]}]
   (case type
@@ -244,7 +253,7 @@
                                             (o/fire-rules)))))))))
 
 (defn render-tiled-map [game camera game-width game-height]
-  (let [{:keys [::firstgid->entity]} (get @(::asset/db* game) :asset/worldmap)
+  (let [{:keys [::firstgid->entity]} (get @(::asset/db* game) :id/worldmap)
         tile-size (-> firstgid->entity (get 1) :tile-size)]
     (doseq [[_ entity] (->> firstgid->entity (sort-by (fn [[gid _v]] gid)))]
       (c/render game (-> (:entity entity)

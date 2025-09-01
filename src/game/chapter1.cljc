@@ -14,7 +14,7 @@
         (-> (asset :asset/berkelana
                    #::asset{:img-to-load "berkelana.png" :type ::asset/spritesheet}
                    #::spritesheet{:frame-width 32 :frame-height 32})
-            (asset :asset/worldmap
+            (asset :id/worldmap
                    #::asset{:type ::asset/tiledmap}
                    #::tiled{:parsed-tmx tiled/world-map-tmx})
             (esse :ubim
