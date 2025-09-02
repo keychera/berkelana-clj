@@ -7,12 +7,13 @@
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as sp]
    [engine.utils :as utils]
+   [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.gl.entities-2d :as e2d]
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
-   [engine.world :as world]))
+   [rules.instanceable :as instanceable]))
 
 (def world-map-tmx
   (edn/read-string (read-tiled-map-on-compile "tiled143/world.tmx")))
@@ -42,7 +43,7 @@
               (o/retract tileset-name ::for)
               (o/insert asset-id ::asset/loaded? true))
          (load-tile-instances game db* asset-id)))]
-    
+
     ::objects-loaded?
     [:what
      [::global ::objects-loaded? loaded?]]}))
@@ -145,10 +146,15 @@
         firstgid->compiled-entity
         (update-vals
          firstgid->tileset
-         #(-> %
-              (assoc :i 0)
-              (update :entity (fn [entity]
-                                (c/compile game (instances/->instanced-entity entity))))))
+         (fn [tileset]
+           (-> tileset
+               (assoc :i 0)
+               (update :entity (fn [entity]
+                                 (let [instanced (c/compile game (instances/->instanced-entity entity))
+                                       keyname   (keyword (:name tileset))]
+                                   (swap! db* assoc-in [asset-id keyname ::instanceable/raw] entity)
+                                   (swap! db* assoc-in [asset-id keyname ::instanceable/instanced] instanced)
+                                   instanced))))))
 
         firstgid->instanced-entity
         (reduce
@@ -161,10 +167,11 @@
          (map vector (:tiles tiled-map) (:entities tiled-map)))]
     (swap! db*
            #(-> %
-                (assoc asset-id {::tiled-map (-> tiled-map
-                                                 (dissoc :entities)
-                                                 (merge (vars->map map-width map-height)))
-                                 ::firstgid->entity firstgid->instanced-entity})))))
+                (update asset-id merge
+                        {::tiled-map (-> tiled-map
+                                         (dissoc :entities)
+                                         (merge (vars->map map-width map-height)))
+                         ::firstgid->entity firstgid->instanced-entity})))))
 
 (defn parse-value-type [{:keys [value type]}]
   (case type
@@ -213,8 +220,7 @@
                          sp/NONE] parsed-tmx)
              (into [] (comp (map first)
                             (map (fn [[firstgid tileset img & tile-props]]
-                                   (merge firstgid
-                                          (update tileset :name #(str asset-id "." %))
+                                   (merge firstgid tileset
                                           {:image (update img :source #(str home-path "/" %))
                                            :tile-props (into {} (map handle-tile-props) tile-props)}))))))
         layers (into {}
@@ -236,8 +242,9 @@
                           (o/insert (:name t) ::tilesets-loaded? false)
                           (o/insert (:name t) ::for asset-id))) % tilesets))
     (swap! (::asset/db* game)
-           (fn [db] (assoc db asset-id (assoc (vars->map layers objectgroup map-width map-height)
-                                              :firstgids (->> tilesets (mapv :firstgid) (sort >))))))
+           (fn [db] (update db asset-id merge
+                            (assoc (vars->map layers objectgroup map-width map-height)
+                                   :firstgids (->> tilesets (mapv :firstgid) (sort >))))))
 
     (doseq [tileset tilesets]
       (utils/get-image

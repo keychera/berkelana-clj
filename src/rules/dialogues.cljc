@@ -3,7 +3,6 @@
    #?(:clj [engine.macros :refer [s->]]
       :cljs [engine.macros :refer-macros [s->]])
    [assets.assets :as asset]
-   [assets.spritesheet :as spritesheet]
    [assets.texts :as texts]
    [clojure.spec.alpha :as s]
    [engine.world :as world]
@@ -12,6 +11,7 @@
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
    [rules.input :as input]
+   [rules.instanceable :as instanceable]
    [rules.time :as time]))
 
 (def dialogue-box-frag-shader
@@ -34,7 +34,7 @@
 
 (defn init-asset [game db*]
   (let [asset-id  :id/berkelana
-        raw-image (::spritesheet/raw (get @db* asset-id))
+        raw-image (::instanceable/raw (get @db* asset-id))
         dialogue-instanced
         (c/compile game (-> (instances/->instanced-entity raw-image)
                             (assoc :fragment dialogue-box-frag-shader)))]

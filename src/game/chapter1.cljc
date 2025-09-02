@@ -27,5 +27,9 @@
       (esse :ubim #::grid-move{:target-attr-x ::pos2d/x})
       (esse :prop/bucket
             #::pos2d{:x 16 :y 0}
-            #::sprites{:sprite-from-asset :id/berkelana :frame-index 0}
+            #::sprites{:sprite-from-asset :id/worldmap :frame-index 0}
+            #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
+      (esse :prop/bucket2
+            #::pos2d{:x 64 :y 32}
+            #::sprites{:sprite-from-asset :id/worldmap :frame-index 0}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})))
