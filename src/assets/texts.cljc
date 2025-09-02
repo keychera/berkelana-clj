@@ -9,8 +9,7 @@
    [play-cljc.gl.core :as c]
    [play-cljc.gl.text :as gl-text]
    [play-cljc.instances :as i]
-   [play-cljc.transforms :as t]
-   [rules.ubim :as ubim]))
+   [play-cljc.transforms :as t]))
 
 ;; from example play-cljc-examples/ui-gallery/src/ui_gallery
 
@@ -42,7 +41,7 @@
               :dynamic-entity dynamic-entity)))))
 
 (defn render [game world camera game-width game-height]
-  (let [{:keys [x y]} (first (o/query-all world ::ubim/ubim-esse))
+  (let [x 32 y 128
         {:keys [texts cnt]} (first (o/query-all world ::counter))
         {:keys [font-entity dynamic-entity]} @(::font-instances* game)]
     (when (and font-entity dynamic-entity texts)

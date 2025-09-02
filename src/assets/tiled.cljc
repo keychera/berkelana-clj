@@ -136,7 +136,7 @@
                   tile
                   (update :tiles conj tile)
                   tile
-                  (update :entities conj (t/translate (nth (:images tileset) localid) (inc x) y)))))
+                  (update :entities conj (t/translate (nth (:images tileset) localid) x y)))))
             tiled-map'
             objects))
          tiled-map

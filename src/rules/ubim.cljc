@@ -2,36 +2,27 @@
   (:require
    #?(:clj [engine.macros :refer [insert!]]
       :cljs [engine.macros :refer-macros [insert!]])
-   [assets.assets :as asset]
-   [assets.spritesheet :as spritesheet]
    [clojure.spec.alpha :as s]
    [odoyle.rules :as o]
-   [play-cljc.gl.core :as c]
-   [play-cljc.transforms :as t]
    [rules.input :as input]
-   [rules.pos2d :as pos2d]
-   [rules.time :as time]
-   [play-cljc.instances :as instances]))
+   [rules.sprites :as sprites]
+   [rules.time :as time]))
 
 (s/def ::anim-tick number?)
 (s/def ::anim-elapsed-ms number?)
 
-(s/def ::sprite-from-asset any?)
-(s/def ::frame-index int?)
-
 (def rules
   (o/ruleset
-   {::move-animation
+   {::ubim-animation
     [:what
      [::time/now ::time/delta delta-time]
      [keyname ::input/pressed-key keystate]
      [:ubim ::anim-tick anim-tick {:then false}]
-     [esse-id ::anim-elapsed-ms anim-elapsed-ms {:then false}]
-     [esse-id ::frame-index frame-index {:then false}]
+     [:ubim ::anim-elapsed-ms anim-elapsed-ms {:then false}]
      :when
      (#{:left :right :up :down} keyname)
      :then
-     (insert! esse-id
+     (insert! :ubim
               (merge
                (if (> anim-elapsed-ms 100)
                  {::anim-tick (inc anim-tick) ::anim-elapsed-ms 0}
@@ -39,42 +30,10 @@
                (case keystate
                  ::input/keydown
                  (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
-                   {::frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)})
+                   {::sprites/frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)})
 
                  ::input/keyup
                  {::anim-elapsed-ms 0
-                  ::frame-index (case keyname :down 1 :left 13 :right 25 :up 37 1)}
+                  ::sprites/frame-index (case keyname :down 1 :left 13 :right 25 :up 37 1)}
 
-                 {})))]
-
-    ::ubim-esse
-    [:what
-     [esse-id ::pos2d/x x]
-     [esse-id ::pos2d/y y]
-     [esse-id ::frame-index frame-index]
-     [esse-id ::sprite-from-asset asset-id]
-     [asset-id ::asset/loaded? true]]}))
-
-
-(defn render [game world camera game-width game-height]
-  (when-let [sprite-esse (first (o/query-all world ::ubim-esse))]
-    (let [db* (:db* (first (o/query-all world ::asset/db*)))
-          {:keys [x y asset-id frame-index]} sprite-esse
-          {::spritesheet/keys [raw instanced frame-height frame-width]} (get @db* asset-id)
-          frames-per-row (/ (:width instanced) frame-width)
-          frame-x (mod frame-index frames-per-row)
-          frame-y (quot frame-index frames-per-row)
-          crop-x (* frame-x frame-width)
-          crop-y (* frame-y frame-height)
-          ubim (-> raw
-                   (t/crop crop-x crop-y frame-width frame-height)
-                   (t/invert camera)
-                   (t/translate x y)
-                   (t/scale frame-width frame-height))
-          instanced (-> (instances/assoc instanced 0 ubim)
-                        (t/project game-width game-height))
-          ;; t/project is done here because of webgl only bug that is caused by instanced having no :uniforms
-          ;; which make (gl game uniform1i location unit) is not called on render
-          ;; and somehow lwjgl still works fine while webgl uses texts' texture instead
-          ]
-      (c/render game instanced))))
+                 {})))]}))

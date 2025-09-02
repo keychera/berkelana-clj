@@ -12,8 +12,7 @@
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
    [rules.input :as input]
-   [rules.time :as time]
-   [rules.ubim :as ubim]))
+   [rules.time :as time]))
 
 (def dialogue-box-frag-shader
   {:precision "mediump float"
@@ -145,7 +144,7 @@
 (defn render [game world camera game-width game-height]
   (when (some? (::raw @(::dialogue-instances* game)))
     (let [;; require frame to be square 
-          {:keys [x y]} (first (o/query-all world ::ubim/ubim-esse))
+          x 32 y 128
           {:keys [texts cnt]} (first (o/query-all world ::texts/counter))
           {::keys [raw instanced]} @(::dialogue-instances* game)
           width 64 height 18 pos-x 2 pos-y -30

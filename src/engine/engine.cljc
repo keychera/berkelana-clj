@@ -21,6 +21,7 @@
    [rules.grid-move :as grid-move]
    [rules.input :as input]
    [rules.shader :as shader]
+   [rules.sprites :as sprites]
    [rules.time :as time]
    [rules.ubim :as ubim]
    [rules.window :as window]))
@@ -46,7 +47,8 @@
   ;; gonna refactor everything to this
   (concat [assets/system
            texts/system
-           dialogues/system]
+           dialogues/system
+           sprites/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
 (defn ->game [context]
@@ -118,7 +120,7 @@
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))
           (tiled/render-tiled-map game camera game-width game-height)
-          (ubim/render game world camera game-width game-height)
+          (sprites/render game world camera game-width game-height)
           (dialogues/render game world camera game-width game-height)
           (texts/render game world camera game-width game-height)
           (shader/render-shader-esses game world game-width game-height)))
