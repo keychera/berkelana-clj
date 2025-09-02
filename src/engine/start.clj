@@ -3,7 +3,6 @@
    [engine.engine :as engine]
    [engine.world :as world]
    [odoyle.rules :as o]
-   [play-cljc.gl.core :as pc]
    [rules.input :as input]
    [rules.window :as window])
   (:import
@@ -55,7 +54,7 @@
     (MemoryUtil/memFree *window-height)
     (swap! world-queue conj (fn on-mouse-move [w] (o/insert w ::input/mouse {::input/x x ::input/y y})))))
 
-(defn on-mouse-click! [window button action mods])
+(defn on-mouse-click! [_window _button _action _mods])
 
 (defn keycode->keyword [keycode]
   (condp = keycode
@@ -66,19 +65,19 @@
     GLFW/GLFW_KEY_SPACE ::input/space
     nil))
 
-(defn on-key! [window keycode scancode action mods]
+(defn on-key! [_window keycode _scancode action _mods]
   (when-let [keyname (keycode->keyword keycode)]
     (condp = action
       GLFW/GLFW_PRESS (swap! world-queue conj (fn on-press [w] (o/insert w keyname ::input/pressed-key ::input/keydown)))
       GLFW/GLFW_RELEASE (swap! world-queue conj (fn on-release [w] (o/insert w keyname ::input/pressed-key ::input/keyup)))
       nil)))
 
-(defn on-char! [window codepoint])
+(defn on-char! [_window _codepoint])
 
-(defn on-resize! [_ width height]
+(defn on-resize! [_window width height]
   (swap! world-queue conj (fn on-resize [w] (window/set-window w width height))))
 
-(defn on-scroll! [window xoffset yoffset])
+(defn on-scroll! [_window _xoffset _yoffset])
 
 (defprotocol Events
   (on-mouse-move [this xpos ypos])
@@ -105,7 +104,7 @@
     (on-resize! handle width height))
   (on-scroll [{:keys [handle]} xoffset yoffset]
     (on-scroll! handle xoffset yoffset))
-  (on-tick [this game]
+  (on-tick [_this game]
     (update-world game)
     (engine/tick game)))
 
@@ -113,31 +112,31 @@
   (doto handle
     (GLFW/glfwSetCursorPosCallback
      (reify GLFWCursorPosCallbackI
-       (invoke [this _ xpos ypos]
+       (invoke [_this _ xpos ypos]
          (on-mouse-move window xpos ypos))))
     (GLFW/glfwSetMouseButtonCallback
      (reify GLFWMouseButtonCallbackI
-       (invoke [this _ button action mods]
+       (invoke [_this _ button action mods]
          (on-mouse-click window button action mods))))
     (GLFW/glfwSetKeyCallback
      (reify GLFWKeyCallbackI
-       (invoke [this _ keycode scancode action mods]
+       (invoke [_this _ keycode scancode action mods]
          (on-key window keycode scancode action mods))))
     (GLFW/glfwSetCharCallback
      (reify GLFWCharCallbackI
-       (invoke [this _ codepoint]
+       (invoke [_this _ codepoint]
          (on-char window codepoint))))
     (GLFW/glfwSetFramebufferSizeCallback
      (reify GLFWFramebufferSizeCallbackI
-       (invoke [this _ width height]
+       (invoke [_this _ width height]
          (on-resize window width height))))
     (GLFW/glfwSetScrollCallback
      (reify GLFWScrollCallbackI
-       (invoke [this _ xoffset yoffset]
+       (invoke [_this _ xoffset yoffset]
          (on-scroll window xoffset yoffset))))
     (GLFW/glfwSetWindowCloseCallback
      (reify GLFWWindowCloseCallbackI
-       (invoke [this _window]
+       (invoke [_this _window]
          (System/exit 0))))))
 
 (defn ->window

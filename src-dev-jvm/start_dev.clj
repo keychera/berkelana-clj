@@ -34,10 +34,9 @@
     (start/start game window callback)))
 
 (defn -main []
-  (let [port 53130]
+  (let [nrepl-server (nrepl-server/start-server :handler cider-nrepl-handler)]
     (println "game REPL...")
-    (spit ".nrepl-port" port)
-    (nrepl-server/start-server :port port :handler cider-nrepl-handler))
+    (spit ".nrepl-port" (:port nrepl-server)))
   (while true (start)) ;; forever start so after (stop), it will (start) again
   (Hello/hello "goodbye!")
   (shutdown-agents))

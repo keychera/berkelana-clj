@@ -17,23 +17,23 @@ todo:
         ✔ bounce @done(25-08-03 14:17)
         ✔ vertex animation @done(25-08-03 14:17)
 
-    ☐ refactor needed for resource load ordering and solving text/spritesheet instance error
+    ✔ refactor needed for resource load ordering and solving text/spritesheet instance error @done(25-09-03 07:15)
         ✘ try cursive @cancelled(25-08-23 12:24) 
         ✔ supply rules to worlds @done(25-08-23 12:23)
         ✔ access to world* atom instead of passing @done(25-08-23 12:24)
         ✔ make spritesheet an instance @done(25-08-23 12:24)
         ✘ implement order and check if texture mixing is still happening @cancelled(25-08-23 12:24) the bug is caused by no :uniforms on instance (see ubim.cljc)
-        ☐ crop dialogue manually
-        ☐ dialogue box
+        ✔ crop dialogue manually @done(25-09-03 07:15)
+        ✔ dialogue box @done(25-09-03 07:15)
 
     ☐ Text
         ✔ explore play-cljc.text @done(25-08-21 00:41)
-        ☐ hook load logic to rules-engine/assets
-        ☐ represents text assets as esse/asset
+        ✔ hook load logic to rules-engine/assets @done(25-09-03 07:15)
+        ✔ represents text assets as esse/asset @done(25-09-03 07:15)
         ☐ dialogues
-            ☐ n-patch dialogue box
-            ☐ triggerrable
-            ☐ script
+            ✔ n-patch dialogue box @done(25-09-03 07:14)
+            ✔ triggerrable @done(25-09-03 07:14)
+            ✔ script @done(25-09-03 07:14)
             ☐ typing text
             ☐ positions
             ☐ timeline
@@ -50,6 +50,8 @@ todo:
     ☐ Interactable
         ☐ switches
         ☐ pushable
+        ☐ talkable
+        ☐ move to another room
 
     ☐ tiled maps, advanced
         ☐ multiple areas in one .tmx
@@ -58,13 +60,14 @@ todo:
         ☐ animated tiles
         ☐ bushes effect (some patch of bushes in front of player, particles)
         ✔ (actual)Objects layer @done(25-08-20 07:03)
-            ☐ turn some objects into esse
+            ✘ turn some objects into esse @cancelled(25-09-03 07:15) manually use the instanced as spritesheet
         ☐ 2d entities employing 3rd dimension
 
 
     ☐ particle
 
     ☐ post-effect
+        ☐ learn render to texture
     
     ☐ transform2d
         ☐ scene graph
@@ -73,7 +76,8 @@ todo:
             ☐ possible octopath?
 
     ☐ ordered execution
-        ☐ text dialogue
+        ✔ text dialogue @done(25-09-03 07:23)
+        ☐ menu -> game
 
     ☐ sound effect
     ☐ music
@@ -82,8 +86,8 @@ todo:
 
     ☐ Texture Atlas
 
-    ☐ instanced image
-        ☐ background
+    ✔ instanced image @done(25-09-03 07:23)
+        ✘ background @cancelled(25-09-03 07:23) tiledmap will do
         ✔ tilemaps, or try out the supported tilemap related libs @done(25-08-12 04:15)
             ✔ we tried tiled and have made one but seems using tilesoup is a grand task, defer for now @done(25-08-12 04:15)
             ✔ also what's with that macro for slurp hack? @done(25-08-12 04:15) so it is compile-time stuff'
@@ -95,25 +99,35 @@ bugs:
     ☐ multiple input keys at once (movement arrow up and left for example)
     ☐ tiles sometimes rendered in wrong order
     ☐ still not sure what happen if a layer is using more than one tileset
+    ☐ sometimes inputs are not responsive the first seconds interacting with the game
+    ☐ the animation sometimes "slides", still feel jaggy at times
+    ☐ rendering order in jvm is different
+    ☐ instances/assoc (seemingly) blows up js call stack when nulls are passed. need triage
 
 
 devs:
     ✔ leva receiving data @done(25-07-29 21:13)
     ✘ dependency inversion for engine (everyone supply engine instead) @cancelled(25-08-12 04:18)
-        ☐ or maybe make engine define all its deps, decoupling whatever it is in world
+        ✔ or maybe make engine define all its deps, decoupling whatever it is in world @done(25-09-03 07:17)
         ✘ when in doubt-learn from the behemoth https://docs.unity3d.com/6000.0/Documentation/Manual/execution-order.html @cancelled(25-08-12 04:19) nah, too complex for now
     ✔ shadow-cljs error hud at runtime @done(25-08-09 19:02)
 
     ✔ build with tools.build @done(25-08-12 04:17) kinda done, will tidy up as we go
-        ☐ native build
+        ✔ native build @done(25-09-03 07:17)
     ✘ flag-like behaviour in rules engine (query-once then delete, potentially YAGNI) @cancelled(25-08-06 22:50)
-        ☐ I think the behaviour is already like this, if the rule fire once, it can only be queried once, the fact is not deleted tho
+        ✔ I think the behaviour is already like this, if the rule fire once, it can only be queried once, the fact is not deleted tho @done(25-09-03 07:26)
     ✘ bidirectionality (YAGNI alert) @cancelled(25-08-02 23:10) I forgot what this is, leva is already bidirectional
     ✔ somehow we integrated imgui in jvm side @done(25-08-12 04:23)
-        ☐ make fps counter in java side
+        ✔ make fps counter in java side @done(25-09-03 07:26)
 
     ☐ try vybes and maybe flecs if we can incorporate rules engine or our 2d stuff (https://github.com/pfeodrippe/vybe)
     ☐ that spritesheet file is just images with metadata
+
+    ☐ profile memory
+    ☐ explore graalvm...👀?
+    ☐ moves cljs dev to src-dev-js
+    
+
 
 upstream:
     ☐ play-cljc shader compile error when inserting uniform that is not declared inside shader
@@ -123,4 +137,4 @@ upstream:
         ☐ start discussion in github issue?
         ☐ check cljs <-> clj diff https://github.com/jank-lang/clojure-test-suite/blob/bb437118c9713a7a3d5a7f250fdf309b84b388e0/test/clojure/core_test/str.cljc
         ☐ check iglu impl on :number https://github.com/oakes/iglu/blob/68e48f8fd2ac6590b6b43fb071a67c8de8c663ce/src/iglu/glsl.cljc#L109
-    ☐ tiled-soup for newer version of tiled  
+    ☐ tiled-soup for newer version of tiled

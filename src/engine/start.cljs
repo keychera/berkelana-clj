@@ -4,7 +4,6 @@
    [engine.world :as world]
    [goog.events :as events]
    [odoyle.rules :as o]
-   [play-cljc.gl.core :as pc]
    [rules.input :as input]
    [rules.window :as window]))
 
