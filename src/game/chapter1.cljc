@@ -26,10 +26,10 @@
       ;; need to understand why this separation preserve the player pos on reload
       (esse :ubim #::grid-move{:target-attr-x ::pos2d/x})
       (esse :prop/bucket
-            #::pos2d{:x 16 :y 0}
-            #::sprites{:sprite-from-asset :id/worldmap :frame-index 0}
+            #::pos2d{:x (* 16 3) :y (* 16 5)}
+            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 9) 5)}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
       (esse :prop/bucket2
-            #::pos2d{:x 64 :y 32}
-            #::sprites{:sprite-from-asset :id/worldmap :frame-index 0}
+            #::pos2d{:x (* 16 5) :y (* 16 5)}
+            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 18) 28)}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})))

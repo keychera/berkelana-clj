@@ -30,6 +30,8 @@
 (def sp->map-dimension (sp/multi-path [:id/worldmap ::tiled/tiled-map :map-width]
                                       [:id/worldmap ::tiled/tiled-map :map-height]))
 
+(def offset 8) ;; to align with tiledmap grid
+
 (def rules
   (o/ruleset
    {::configure
@@ -96,10 +98,10 @@
      [esse-id ::move-duration move-duration {:then false}]
      :then
      (let [t (- 1.0 (/ move-delay move-duration))
-           ease-fn #(Math/pow % 2) grid 16
+           ease-fn identity grid 16
            x (+ sx (* (- px sx) (ease-fn t)))
            y (+ sy (* (- py sy) (ease-fn t)))]
        (insert! esse-id
-                {attr-x (* grid x)
-                 attr-y (* grid y)}))]}))
+                {attr-x (- (* grid x) offset)
+                 attr-y (- (* grid y) offset)}))]}))
 

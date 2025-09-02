@@ -75,7 +75,7 @@
                                         (* y tileheight)
                                         (- tilewidth 1)
                                         (- tileheight 1))))]
-             (assoc tileset :images images :tile-size tilewidth)))) ;; assuming square tiles
+             (assoc tileset :images images :tile-size tilewidth :width (:width image))))) ;; assuming square tiles
 
         {:keys [layers objectgroup map-width map-height firstgids]} asset-data
 
@@ -266,7 +266,6 @@
       (c/render game (-> (:entity entity)
                          (t/project game-width game-height)
                          (t/invert camera)
-                         (t/translate 8 8)
                          (t/scale tile-size tile-size))))))
 ;; this is SCROT from below
 

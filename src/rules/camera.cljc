@@ -24,8 +24,8 @@
            scale 0.15 ;; value from trial and error
            cam-fn
            #(-> %
-                (t/translate (- (* width 0.5 scale) map-size)
-                             (- (* height 0.5 scale) map-size))
+                (t/translate (+ (* width 0.5 scale) (- map-size) 8)
+                             (+ (* height 0.5 scale) (- map-size) 8))
                 (t/rotate Math/PI)
                 (t/scale scale scale))]
        (s-> session

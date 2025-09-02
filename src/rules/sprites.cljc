@@ -54,7 +54,7 @@
             (reduce
              (fn assoc-esse [instanced [idx esse]]
                (let [{:keys [x y frame-index]} esse
-                     frames-per-row (/ (:width instanced) frame-width)
+                     frames-per-row (/ (:width instanced) frame-width) ;; assuming instanced have width
                      frame-x (mod frame-index frames-per-row)
                      frame-y (quot frame-index frames-per-row)
                      crop-x (* frame-x frame-width)
