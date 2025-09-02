@@ -22,27 +22,29 @@
       [esse-id ::pos2d/y y]
       [esse-id ::frame-index frame-index]
       [esse-id ::sprite-from-asset asset-id]
+      [asset-id ::asset/type asset-type]
       [asset-id ::asset/loaded? true]]})})
 
 (defn render [game world camera game-width game-height]
-  (doseq [sprite-esse (o/query-all world ::sprite-esse)]
-    (let [db* (:db* (first (o/query-all world ::asset/db*)))
-          {:keys [x y asset-id frame-index]} sprite-esse
-          {::spritesheet/keys [raw instanced frame-height frame-width]} (get @db* asset-id)
-          frames-per-row (/ (:width instanced) frame-width)
-          frame-x (mod frame-index frames-per-row)
-          frame-y (quot frame-index frames-per-row)
-          crop-x (* frame-x frame-width)
-          crop-y (* frame-y frame-height)
-          sprite (-> raw
-                     (t/crop crop-x crop-y frame-width frame-height)
-                     (t/invert camera)
-                     (t/translate x y)
-                     (t/scale frame-width frame-height))
-          instanced (-> (instances/assoc instanced 0 sprite)
-                        (t/project game-width game-height))
-          ;; t/project is done here because of webgl only bug that is caused by instanced having no :uniforms
-          ;; which make (gl game uniform1i location unit) is not called on render
-          ;; and somehow lwjgl still works fine while webgl uses texts' texture instead
-          ]
-      (c/render game instanced))))
+  (let [db @(:db* (first (o/query-all world ::asset/db*)))
+        asset->esses (->> (o/query-all world ::sprite-esse) (group-by :asset-id))]
+    (doseq [[asset-id esses] asset->esses]
+      (let [instanced'
+            (reduce
+             (fn assoc-esse [instanced [idx esse]]
+               (let [{:keys [x y asset-id frame-index]} esse
+                     {::spritesheet/keys [raw frame-height frame-width]} (get db asset-id)
+                     frames-per-row (/ (:width instanced) frame-width)
+                     frame-x (mod frame-index frames-per-row)
+                     frame-y (quot frame-index frames-per-row)
+                     crop-x (* frame-x frame-width)
+                     crop-y (* frame-y frame-height)
+                     sprite (-> raw
+                                (t/crop crop-x crop-y frame-width frame-height)
+                                (t/invert camera)
+                                (t/translate x y)
+                                (t/scale frame-width frame-height))]
+                 (instances/assoc instanced idx sprite)))
+             (::spritesheet/instanced (get db asset-id))
+             (map-indexed vector esses))]
+        (c/render game (-> instanced' (t/project game-width game-height)))))))

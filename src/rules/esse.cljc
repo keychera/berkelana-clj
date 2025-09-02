@@ -13,6 +13,10 @@
 
 (defn asset
   [world asset-id & maps]
-  (let [db* (:db* (first (o/query-all world ::asset/db*)))]
-    (swap! db* assoc asset-id (apply deep-merge maps)))
-  (o/insert world asset-id ::asset/loaded? false))
+  (let [db*        (:db* (first (o/query-all world ::asset/db*)))
+        merged-map (apply deep-merge maps)]
+    (swap! db* assoc asset-id merged-map)
+    (o/insert world asset-id
+              {::asset/type    (or (::asset/type merged-map)
+                                   (throw (ex-info (str "no asset type for " asset-id) {})))
+               ::asset/loaded? false})))

@@ -33,7 +33,7 @@
 (s/def ::dialogue-instances* #(instance? #?(:clj clojure.lang.Atom :cljs Atom) %))
 
 (defn init-asset [game db*]
-  (let [asset-id  :asset/berkelana
+  (let [asset-id  :id/berkelana
         raw-image (::spritesheet/raw (get @db* asset-id))
         dialogue-instanced
         (c/compile game (-> (instances/->instanced-entity raw-image)
@@ -61,7 +61,7 @@
    (o/ruleset
     {::prep-dialogue-box
      [:what
-      [:asset/berkelana ::asset/loaded? true]
+      [:id/berkelana ::asset/loaded? true]
       [::world/global ::world/game game]
       [::asset/global ::asset/db* db*]
       :then

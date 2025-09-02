@@ -12,8 +12,8 @@
 (defn init [session init-only?]
   (-> session
       (cond-> init-only?
-        (-> (asset :asset/berkelana
-                   #::asset{:img-to-load "berkelana.png" :type ::asset/spritesheet}
+        (-> (asset :id/berkelana
+                   #::asset{:type ::asset/spritesheet :img-to-load "berkelana.png"}
                    #::spritesheet{:frame-width 32 :frame-height 32})
             (asset :id/worldmap
                    #::asset{:type ::asset/tiledmap}
@@ -21,11 +21,11 @@
             (esse :ubim
                   grid-move/default #::grid-move{:target-attr-y ::pos2d/y :pos-x 2 :pos-y 4}
                   #::pos2d{:x 0 :y 0}
-                  #::sprites{:sprite-from-asset :asset/berkelana :frame-index 0}
+                  #::sprites{:sprite-from-asset :id/berkelana :frame-index 0}
                   #::ubim{:anim-tick 0 :anim-elapsed-ms 0})))
       ;; need to understand why this separation preserve the player pos on reload
       (esse :ubim #::grid-move{:target-attr-x ::pos2d/x})
       (esse :prop/bucket
             #::pos2d{:x 16 :y 0}
-            #::sprites{:sprite-from-asset :asset/berkelana :frame-index 0}
+            #::sprites{:sprite-from-asset :id/berkelana :frame-index 0}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})))
