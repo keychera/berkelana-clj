@@ -107,9 +107,7 @@
      [esse-id ::next-y next-y {:then false}]
      [esse-id ::move-duration move-duration {:then false}]
      :then
-     (s-> session
-          (o/retract esse-id ::state)
-          (o/insert esse-id {::state ::idle ::pos-x next-x ::pos-y next-y ::move-delay move-duration}))]
+     (s-> session (o/insert esse-id {::state ::idle ::pos-x next-x ::pos-y next-y ::move-delay move-duration}))]
 
     ::animate-pos
     [:what
