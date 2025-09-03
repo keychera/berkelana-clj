@@ -27,7 +27,7 @@
 (s/def ::next-y number?)
 (s/def ::move-delay number?)
 
-(s/def ::state #{::idle ::deciding-move})
+(s/def ::state #{::init ::idle ::deciding-move})
 (s/def ::check-order int?)
 
 (def sp->layers->props (sp/path [:id/worldmap ::tiled/tiled-map :layers (sp/multi-path "Structures" "Interactables")]))
@@ -39,15 +39,16 @@
 
 (def rules
   (o/ruleset
-   {::position-on-idle
+   {::position-on-init
     [:what
-     [esse-id ::state ::idle]
+     [esse-id ::state ::init]
      [esse-id ::pos-x pos-x {:then false}]
      [esse-id ::pos-y pos-y {:then false}]
      :then
      (s-> session
           (o/insert esse-id
-                    {::pos2d/x (- (* grid pos-x) offset)
+                    {::state ::idle
+                     ::pos2d/x (- (* grid pos-x) offset)
                      ::pos2d/y (- (* grid pos-y) offset)}))]
     
     ::move-player
