@@ -19,6 +19,7 @@
 
 ; properties
 (s/def ::unwalkable? boolean?)
+(s/def ::pushable? boolean?)
 
 ; intermediates
 (s/def ::prev-x number?)
@@ -50,11 +51,12 @@
                     {::state ::idle
                      ::pos2d/x (- (* grid pos-x) offset)
                      ::pos2d/y (- (* grid pos-y) offset)}))]
-    
-    ::move-player
+
+    ::move-ubim
     [:what
      [::time/now ::time/delta delta-time]
      [keyname ::input/pressed-key ::input/keydown]
+     [esse-id ::state ::idle {:then false}]
      [esse-id ::pos-x pos-x {:then false}]
      [esse-id ::pos-y pos-y {:then false}]
      [esse-id ::move-delay move-delay {:then false}]
@@ -66,8 +68,20 @@
      (let [next-x (case keyname :left (dec pos-x) :right (inc pos-x) pos-x)
            next-y (case keyname :up   (dec pos-y) :down  (inc pos-y) pos-y)]
        (s-> session
-            (o/insert esse-id {::prev-x pos-x ::prev-y pos-y ::next-x next-x ::next-y next-y
-                               ::state ::deciding-move ::check-order 0})))]
+            (o/insert esse-id {::state ::deciding-move ::next-x next-x ::next-y next-y ::check-order -1})))]
+
+    ::move-esse
+    [:what
+     [esse-id ::state ::deciding-move]
+     [esse-id ::next-x next-x]
+     [esse-id ::next-y next-y]
+     [esse-id ::pos-x pos-x {:then false}]
+     [esse-id ::pos-y pos-y {:then false}]
+     [esse-id ::check-order -1 {:then false}]
+     :when
+     (or (not= pos-x next-x) (not= pos-y next-y))
+     :then
+     (s-> session (o/insert esse-id {::prev-x pos-x ::prev-y pos-y ::check-order 0}))]
 
     ::check-world-boundaries
     [:what
@@ -81,6 +95,7 @@
            out-of-map? (let [[map-width map-height] (sp/select sp->map-dimension db)]
                          (or (< next-x 0) (< next-y 0) (> next-x (dec map-width)) (> next-y (dec map-height))))
            unwalkable?   (sp/select-one [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] db)]
+       (println ::check-world-boundaries out-of-map? unwalkable?)
        (if (or out-of-map? unwalkable?)
          (s-> session (o/insert esse-id {::state ::idle}))
          (s-> session (o/insert esse-id {::check-order 1}))))]

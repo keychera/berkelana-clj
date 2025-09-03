@@ -103,6 +103,7 @@ bugs:
     ☐ the animation sometimes "slides", still feel jaggy at times
     ☐ rendering order in jvm is different
     ☐ instances/assoc (seemingly) blows up js call stack when nulls are passed. need triage
+    ☐ retraction is more expensive on jvm than on js (see 6ecedbae90d7ab0568f06ff9990a2c06d6a59243)
 
 
 devs:
