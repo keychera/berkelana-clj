@@ -18,18 +18,17 @@
             (asset :id/worldmap
                    #::asset{:type ::asset/tiledmap}
                    #::tiled{:parsed-tmx tiled/world-map-tmx})
-            (esse :ubim
-                  grid-move/default #::grid-move{:target-attr-y ::pos2d/y :pos-x 2 :pos-y 4}
-                  #::pos2d{:x 0 :y 0}
+            (esse :chara/ubim
+                  #::grid-move{:pos-x 2 :pos-y 4} 
                   #::sprites{:sprite-from-asset :id/berkelana :frame-index 0}
                   #::ubim{:anim-tick 0 :anim-elapsed-ms 0})))
       ;; need to understand why this separation preserve the player pos on reload
-      (esse :ubim #::grid-move{:target-attr-x ::pos2d/x})
+      (esse :chara/ubim grid-move/default)
       (esse :prop/bucket
-            #::pos2d{:x (* 16 3) :y (* 16 5)}
+            grid-move/default #::grid-move{:pos-x 3 :pos-y 5 :unwalkable? true}
             #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 9) 5)}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
-      (esse :prop/bucket2
-            #::pos2d{:x (* 16 5) :y (* 16 5)}
+      (esse :prop/kani 
+            grid-move/default #::grid-move{:pos-x 5 :pos-y 5 :unwalkable? true}
             #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 18) 28)}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})))

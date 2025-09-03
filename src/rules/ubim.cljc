@@ -17,12 +17,12 @@
     [:what
      [::time/now ::time/delta delta-time]
      [keyname ::input/pressed-key keystate]
-     [:ubim ::anim-tick anim-tick {:then false}]
-     [:ubim ::anim-elapsed-ms anim-elapsed-ms {:then false}]
+     [:chara/ubim ::anim-tick anim-tick {:then false}]
+     [:chara/ubim ::anim-elapsed-ms anim-elapsed-ms {:then false}]
      :when
      (#{:left :right :up :down} keyname)
      :then
-     (insert! :ubim
+     (insert! :chara/ubim
               (merge
                (if (> anim-elapsed-ms 100)
                  {::anim-tick (inc anim-tick) ::anim-elapsed-ms 0}

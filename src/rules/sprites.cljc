@@ -49,6 +49,9 @@
             frame-width  (case asset-type
                            ::asset/spritesheet (::spritesheet/frame-width (get db asset-id))
                            ::asset/tiledmap    16)
+            offset-fn    (case asset-type
+                           ::asset/spritesheet #(- % 8)
+                           ::asset/tiledmap    identity)
             ;; hardcoded for now until we can separate spritesheet and tiledmap
             instanced'
             (reduce
@@ -62,7 +65,7 @@
                      sprite (-> raw
                                 (t/crop crop-x crop-y frame-width frame-height)
                                 (t/invert camera)
-                                (t/translate x y)
+                                (t/translate (offset-fn x) (offset-fn y))
                                 (t/scale frame-width frame-height))]
                  (instances/assoc instanced idx sprite)))
              instanced
