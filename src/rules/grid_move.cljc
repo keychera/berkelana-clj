@@ -16,7 +16,7 @@
 (s/def ::move-duration number?)
 (s/def ::pos-x number?)
 (s/def ::pos-y number?)
-(def default {::state ::init ::move-duration 100 ::prev-x 0 ::prev-y 0 ::move-delay 1})
+(def default {::state ::init ::move-duration 100 ::move-delay 0})
 
 ; properties
 (s/def ::unwalkable? boolean?)
@@ -45,14 +45,11 @@
     {::position-on-init
      [:what
       [esse-id ::state ::init]
-      [esse-id ::pos-x pos-x {:then false}]
-      [esse-id ::pos-y pos-y {:then false}]
+      [esse-id ::pos-x pos-x]
+      [esse-id ::pos-y pos-y]
+      [:id/worldmap ::asset/loaded? true]
       :then
-      (s-> session
-           (o/insert esse-id
-                     {::state ::idle
-                      ::pos2d/x (* grid pos-x)
-                      ::pos2d/y (* grid pos-x)}))]
+      (s-> session (o/insert esse-id {::state ::idle ::pos2d/x (* grid pos-x) ::pos2d/y (* grid pos-y)}))]
 
      ::move-ubim
      [:what
