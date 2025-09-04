@@ -5,7 +5,6 @@
    [assets.tiled :as tiled]
    [rules.esse :as esse :refer [asset esse]]
    [rules.grid-move :as grid-move]
-   [rules.pos2d :as pos2d]
    [rules.sprites :as sprites]
    [rules.ubim :as ubim]))
 
@@ -25,7 +24,7 @@
       ;; need to understand why this separation preserve the player pos on reload
       (esse :chara/ubim grid-move/default)
       (esse :prop/bucket
-            grid-move/default #::grid-move{:pos-x 3 :pos-y 5 :unwalkable? true}
+            grid-move/default #::grid-move{:pos-x 3 :pos-y 5 :pushable? true}
             #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 9) 5)}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
       (esse :prop/kani 

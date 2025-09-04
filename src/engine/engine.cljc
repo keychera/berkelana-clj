@@ -37,7 +37,6 @@
    time/rules
    input/rules
    tiled/rules
-   grid-move/rules
    shader/rules
    ubim/rules
    #?(:cljs leva-rules/rules)
@@ -48,7 +47,8 @@
   (concat [assets/system
            texts/system
            dialogues/system
-           sprites/system]
+           sprites/system
+           grid-move/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
 (defn ->game [context]
