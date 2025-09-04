@@ -32,6 +32,7 @@
 (s/def ::move-delay number?)
 
 (s/def ::state #{::init ::idle ::deciding-move})
+(s/def ::pushing any?)
 (s/def ::check-order int?)
 
 (def sp->layers->props (sp/path [:id/worldmap ::tiled/tiled-map :layers (sp/multi-path "Structures" "Interactables")]))
@@ -69,7 +70,7 @@
         (s-> session
              (o/insert esse-id {::state ::deciding-move ::check-order 0 ::move-x move-x ::move-y move-y})))]
 
-     ::move-esse
+     ::deciding-move
      [:what
       [esse-id ::state ::deciding-move]
       [esse-id ::check-order 0 {:then false}]
@@ -77,9 +78,8 @@
       [esse-id ::move-y move-y]
       [esse-id ::pos-x pos-x {:then false}]
       [esse-id ::pos-y pos-y {:then false}]
-      :when
-      (or (not= 0 move-x) (not= 0 move-y))
       :then
+      (println esse-id "DECIDE MOVE TO" (+ pos-x move-x) (+ pos-y move-y))
       (s-> session (o/insert esse-id {::prev-x pos-x ::prev-y pos-y ::next-x (+ pos-x move-x) ::next-y (+ pos-y move-y) ::check-order 1}))]
 
      ::check-world-boundaries
@@ -89,14 +89,14 @@
       [::asset/global ::asset/db* db*]
       [esse-id ::next-x next-x {:then false}]
       [esse-id ::next-y next-y {:then false}]
-      :then
+      :then 
       (let [db @db*
             out-of-map? (let [[map-width map-height] (sp/select sp->map-dimension db)]
                           (and map-width map-height
                                (or (< next-x 0) (< next-y 0) (> next-x (dec map-width)) (> next-y (dec map-height)))))
-            unwalkable?   (or (sp/select-one [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] db) false)]
+            unwalkable?   (or (sp/select-one [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] db) false)] 
         (if (or out-of-map? unwalkable?)
-          (s-> session (o/insert esse-id {::state ::idle}))
+          (s-> session (o/insert esse-id {::state ::idle ::check-order 0}))
           (s-> session (o/insert esse-id {::check-order 2}))))]
 
      ::check-unwalkable
@@ -109,14 +109,15 @@
       [blocker-id ::pos-y blocker-y {:then false}]
       [blocker-id ::unwalkable? true {:then false}]
       :then
+      (println esse-id "CHECK UNWALKABLE" next-x next-y (and (= next-x blocker-x) (= next-y blocker-y)))
       (if (and (= next-x blocker-x) (= next-y blocker-y))
-        (s-> session (o/insert esse-id {::state ::idle}))
+        (s-> session (o/insert esse-id {::state ::idle ::check-order 0}))
         (s-> session (o/insert esse-id {::check-order 2})))]
 
      ::check-pushable
      [:what
       [esse-id ::state ::deciding-move]
-      [esse-id ::check-order 1 {:then false}]
+      [esse-id ::check-order 1]
       [esse-id ::next-x next-x {:then false}]
       [esse-id ::next-y next-y {:then false}]
       [esse-id ::move-x move-x {:then false}]
@@ -124,11 +125,29 @@
       [pushable-id ::pos-x pushable-x {:then false}]
       [pushable-id ::pos-y pushable-y {:then false}]
       [pushable-id ::pushable? true {:then false}]
+      :when (not= esse-id pushable-id)
       :then
+      (println esse-id "CHECK PUSHABLE" next-x next-y "=?" pushable-x pushable-y)
       (if (and (= next-x pushable-x) (= next-y pushable-y))
         (s-> session
-             (o/insert pushable-id {::state ::deciding-move ::check-order 0 ::move-x move-x ::move-y move-y}))
+             (o/insert pushable-id {::state ::deciding-move ::check-order 0
+                                    ::move-x move-x ::move-y move-y})
+             (o/insert esse-id     {::pushing pushable-id}))
         (s-> session (o/insert esse-id {::check-order 2})))]
+
+     ::prevent-pushing
+     [:what
+      [pusher-id ::pushing pushable-id] 
+      [pushable-id ::state ::idle ]
+      :then
+      (when true
+        (println pusher-id "PREVENT PUSHING" pusher-id)
+        (s-> session  (o/insert pusher-id {::pushing :none ::state ::idle ::check-order 0})))]
+
+     ::hmm
+     [:what
+      [pusher-id ::pushing pushable-id]
+      [esse-id ::check-order check]]
 
      ::allow-movement
      [:what
@@ -138,7 +157,8 @@
       [esse-id ::next-y next-y {:then false}]
       [esse-id ::move-duration move-duration {:then false}]
       :then
-      (s-> session (o/insert esse-id {::state ::idle ::pos-x next-x ::pos-y next-y ::move-delay move-duration}))]
+      (println "ALLOW" esse-id)
+      (s-> session (o/insert esse-id {::pushing :none ::state ::idle ::pos-x next-x ::pos-y next-y ::move-delay move-duration}))]
 
      ::animate-pos
      [:what
@@ -174,8 +194,22 @@
       (o/insert "bucket" (merge default {::state ::init ::pos-x 2 ::pos-y 3 ::pushable? true}))
       (o/insert "ubim"   (merge default {::state ::init ::pos-x 2 ::pos-y 2}))
       (o/fire-rules)
-      (o/insert "ubim"   {::state ::deciding-move ::check-order 0 ::move-x 0 ::move-y 1})
+      (doto ((fn [world]
+               (println (o/query-all world ::current-pos))
+               (println (o/query-all world ::hmm)))))
+      (o/insert "ubim" {::state ::deciding-move ::check-order 0 ::move-x 0 ::move-y 1})
       (o/fire-rules)
-      (o/insert "ubim"   {::state ::deciding-move ::check-order 0 ::move-x 0 ::move-y 1})
+      (doto ((fn [world]
+               (println (o/query-all world ::current-pos))
+               (println (o/query-all world ::hmm)))))
+      (o/insert "ubim" {::state ::deciding-move ::check-order 0 ::move-x 0 ::move-y 1})
       (o/fire-rules)
+      (doto ((fn [world]
+               (println (o/query-all world ::current-pos))
+               (println (o/query-all world ::hmm)))))
+      (o/insert "ubim" {::state ::deciding-move ::check-order 0 ::move-x 0 ::move-y -1})
+      (o/fire-rules)
+      (doto ((fn [world]
+               (println (o/query-all world ::current-pos))
+               (println (o/query-all world ::hmm)))))
       (o/query-all ::current-pos)))
