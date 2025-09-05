@@ -16,7 +16,7 @@
 (s/def ::move-duration number?)
 (s/def ::pos-x number?)
 (s/def ::pos-y number?)
-(def default {::move-duration 50 ::move-delay 0})
+(def default {::move-duration 80 ::move-delay 0})
 
 ; properties
 (s/def ::unwalkable? boolean?)
@@ -77,7 +77,6 @@
       :when
       (or (not= 0 move-x) (not= 0 move-y))
       :then
-      (println esse-id "planinng move" (+ pos-x move-x) (+ pos-y move-y))
       (s-> session (o/insert esse-id {::prev-x pos-x ::prev-y pos-y ::next-x (+ pos-x move-x) ::next-y (+ pos-y move-y) ::move-plan ::check-world-boundaries}))]
 
      ::check-world-boundaries
@@ -92,7 +91,6 @@
                           (and map-width map-height
                                (or (< next-x 0) (< next-y 0) (> next-x (dec map-width)) (> next-y (dec map-height)))))
             unwalkable?   (or (sp/select-one [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] db) false)]
-        (println esse-id "::check-world-boundaries" out-of-map? unwalkable?)
         (if (or out-of-map? unwalkable?)
           (s-> session (o/insert esse-id {::move-plan ::prevent-move}))
           (s-> session (o/insert esse-id {::move-plan ::check-unwalkable}))))]
@@ -113,7 +111,6 @@
             (some->> (o/query-all session ::unwalkable-esse)
                      (filter #(and (= next-x (:unwalkable-x %)) (= next-y (:unwalkable-y %))))
                      (map :unwalkable-id))]
-        (println esse-id "::check-unwalkable" unwalkable-esses)
         (if (seq unwalkable-esses)
           (s-> session (o/insert esse-id {::move-plan ::prevent-move}))
           (s-> session (o/insert esse-id {::move-plan ::check-pushable}))))]
@@ -136,7 +133,6 @@
             (some->> (o/query-all session ::pushable-esse)
                      (filter #(and (= next-x (:pushable-x %)) (= next-y (:pushable-y %))))
                      (map :pushable-id))]
-        (println esse-id "::check-pushable" next-x next-y pushable-esses)
         (if (seq pushable-esses)
           (s-> (reduce
                 (fn [session' pushable-id]
@@ -153,14 +149,13 @@
       [pushable-id ::move-plan pushable-move-plan]
       :when (#{::allow-move ::prevent-move} pushable-move-plan)
       :then
-      (println esse-id "allow to push" pushable-id "?")
       (case pushable-move-plan
         ::allow-move
         (s-> session (o/insert esse-id {::move-plan ::allow-move ::pushing nil}))
 
         ::prevent-move
         (s-> session (o/insert esse-id {::move-plan ::prevent-move ::pushing nil})))]
- 
+
      ::allow-move
      [:what
       [esse-id ::move-plan move-plan]
@@ -171,7 +166,6 @@
       [esse-id ::move-duration move-duration {:then false}]
       :when (#{::allow-move ::prevent-move} move-plan)
       :then
-      (println esse-id "allowed to move to" next-x next-y "?" move-plan)
       (case move-plan
         ::allow-move
         (s-> session (o/insert esse-id {::move-plan ::idle ::pos-x next-x ::pos-y next-y ::move-delay move-duration}))
@@ -192,11 +186,12 @@
       :then
       (let [t (- 1.0 (/ move-delay move-duration))
             ease-fn identity
-            x (+ sx (* (- px sx) (ease-fn t)))
-            y (+ sy (* (- py sy) (ease-fn t)))]
+            move-delay (- move-delay delta-time)
+            x (if (> move-delay 0) (+ sx (* (- px sx) (ease-fn t))) px)
+            y (if (> move-delay 0) (+ sy (* (- py sy) (ease-fn t))) py)]
         (s-> session
              (o/insert esse-id
-                       {::move-delay (- move-delay delta-time)
+                       {::move-delay move-delay
                         ::pos2d/x (* grid x)
                         ::pos2d/y (* grid y)})))]})})
 
@@ -206,7 +201,7 @@
                     {::current-pos
                      [:what
                       [esse-id ::pos-x pos-x]
-                      [esse-id ::pos-y pos-y]]}))
+                      [esse-id ::pos-y  pos-y]]}))
            (reduce o/add-rule (o/->session)))
       (o/insert ::asset/global ::asset/db* (atom (sp/setval sp->map-dimension 100 {})))
       (o/insert "rock"   (merge default {::pos-x 2 ::pos-y 5 ::unwalkable? true}))
