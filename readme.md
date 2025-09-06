@@ -5,8 +5,14 @@ berkelana kemanapun asalkan itu yang kamu pilih
 
 shadow-cljs
 ```
-I am using VSCode Calva at the moment and I start dev environemt by selecting Jack-In (it will automatically select the profile and start the game)
+I am using VSCode Calva at the moment and I start dev environment by selecting Jack-In (it will automatically select the profile and start the game)
 the terminal will print the url of the game
+```
+
+js release
+```
+npx shadow-cljs release game
+clj -M:serve :port 1339 :dir "resources/public"
 ```
 
 jvm desktop
@@ -15,7 +21,7 @@ clj -T:build desktop
 ```
 
 
-jvm desktop with repl
+jvm desktop with repl and imgui
 ```
 clj -T:build repl
 ```

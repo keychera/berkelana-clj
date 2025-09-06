@@ -41,10 +41,11 @@
          content))))
 
 #?(:clj
-   (defmacro read-tiled-map-on-compile [fname] 
+   (defmacro read-tiled-map-on-compile [fname]
      (let [tiled-path (str "public/" fname)
-           tiled-res (io/resource tiled-path)
-           home-path (str (.relativize public-resource-path (.getParent (Paths/get (.toURI tiled-res)))))
+           tiled-res  (io/resource tiled-path)
+           _          (println "[berkelana] compiling" tiled-path)
+           home-path  (str (.relativize public-resource-path (.getParent (Paths/get (.toURI tiled-res)))))
            parsed-tiled-res (-> tiled-res slurp ts/parse)]
        (-> parsed-tiled-res
            (as-> data (update data :content (fn [content] (mapv #(parse-tsx-if-any home-path %) content))))

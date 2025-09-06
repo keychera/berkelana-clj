@@ -76,8 +76,9 @@
 
 ;; start the game
 (defn -main
-  ([] (-main nil))
-  ([callback-config]
+  ([] (-main {}))
+  ([config]
+   (println "running the game...")
    (let [canvas (js/document.querySelector "canvas")
          context (.getContext canvas "webgl2" (clj->js {:alpha false}))
          initial-game (assoc (engine/->game context)
@@ -89,10 +90,10 @@
      (resize context)
      (listen-for-resize context)
      (game-loop initial-game
-                (update callback-config
+                (update config
                         :callback-fn
-                        (fn [afn]
+                        (fn callback-fn [afn]
                           (fn [game]
-                            (afn game)
+                            (when afn (afn game))
                             (update-world game)))))
      context)))
