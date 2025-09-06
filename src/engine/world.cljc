@@ -11,6 +11,7 @@
 (s/def ::game map?)
 (s/def ::init-fn   fn? #_(fn [game world] world))
 (s/def ::reload-fn fn? #_(fn [game world] world))
+(s/def ::render-fn fn? #_(fn [game world camera game-width game-height] world))
 
 (s/def ::rule #(instance? odoyle.rules.Rule %))
 (expound/defmsg ::rule  "rules must be odoyle.rules/ruleset\n  e.g. (o/ruleset {...})")
@@ -19,7 +20,7 @@
 
 (s/def ::system
   (s/keys :req [::rules]
-          :opt [::init-fn ::reload-fn]))
+          :opt [::init-fn ::reload-fn ::render-fn]))
 
 #?(:clj
    (defmacro system [name m]

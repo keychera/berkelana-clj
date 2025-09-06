@@ -49,46 +49,6 @@
 
 (s/def ::delay-ms number?)
 
-(world/system system
-  {::world/init-fn
-   (fn [_game world]
-     (-> world
-         (o/insert ::this ::delay-ms 0)
-         (o/insert ::texts/test ::texts/counter 0)
-         (o/insert ::texts/test ::texts/texts script)))
-
-   ::world/rules
-   (o/ruleset
-    {::prep-dialogue-box
-     [:what
-      [:id/berkelana ::asset/loaded? true]
-      [::world/global ::world/game game]
-      [::asset/global ::asset/db* db*]
-      :then
-      (when (nil? @(::dialogue-instances* game))
-        (init-asset game db*))]
-
-     ::progress-delay
-     [:what
-      [::time/now ::time/delta delta-time]
-      [::this ::delay-ms delay-ms {:then false}]
-      :when
-      (> delay-ms 0)
-      :then (s-> session (o/insert ::this ::delay-ms (- delay-ms delta-time)))]
-
-     ::progress-dialogue
-     [:what
-      [::input/space ::input/pressed-key ::input/keydown]
-      [::texts/test ::texts/counter counter {:then false}]
-      [::this ::delay-ms delay-ms {:then false}]
-      :then
-      (when (<= delay-ms 0)
-        (s-> session
-             (o/insert ::this ::delay-ms 50)
-             (o/insert ::texts/test ::texts/counter (inc counter))))]})})
-
-(type (::world/rules system))
-
 (defn nine-patch [raw camera width height pos-x pos-y]
   (let [frame-index 48 frame-w 32  inset 5 ;; hardcoded for now, or forever
         frames-per-row (/ (:width raw) frame-w)
@@ -152,4 +112,43 @@
       (when (> (mod cnt (inc (count texts))) 0)
         (c/render game (-> (reduce-kv instances/assoc instanced nine-patch)
                            (t/project game-width game-height)))))))
- 
+
+(world/system system
+  {::world/init-fn
+   (fn [_game world]
+     (-> world
+         (o/insert ::this ::delay-ms 0)
+         (o/insert ::texts/test ::texts/counter 0)
+         (o/insert ::texts/test ::texts/texts script)))
+
+   ::world/rules
+   (o/ruleset
+    {::prep-dialogue-box
+     [:what
+      [:id/berkelana ::asset/loaded? true]
+      [::world/global ::world/game game]
+      [::asset/global ::asset/db* db*]
+      :then
+      (when (nil? @(::dialogue-instances* game))
+        (init-asset game db*))]
+
+     ::progress-delay
+     [:what
+      [::time/now ::time/delta delta-time]
+      [::this ::delay-ms delay-ms {:then false}]
+      :when
+      (> delay-ms 0)
+      :then (s-> session (o/insert ::this ::delay-ms (- delay-ms delta-time)))]
+
+     ::progress-dialogue
+     [:what
+      [::input/space ::input/pressed-key ::input/keydown]
+      [::texts/test ::texts/counter counter {:then false}]
+      [::this ::delay-ms delay-ms {:then false}]
+      :then
+      (when (<= delay-ms 0)
+        (s-> session
+             (o/insert ::this ::delay-ms 50)
+             (o/insert ::texts/test ::texts/counter (inc counter))))]})
+
+   ::world/render-fn render})

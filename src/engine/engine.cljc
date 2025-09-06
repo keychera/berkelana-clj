@@ -45,8 +45,8 @@
 (def all-systems
   ;; gonna refactor everything to this
   (concat [assets/system
-           texts/system
            dialogues/system
+           texts/system
            sprites/system
            grid-move/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
@@ -54,7 +54,8 @@
 (defn ->game [context]
   (merge
    (c/->game context)
-   {::world/atom*                   (atom nil)
+   {::render-fns*                   (atom nil)
+    ::world/atom*                   (atom nil)
     ::world/prev-rules*             (atom nil)   ;; this is dev-only
     ::assets/db*                    (atom {})
     ::texts/font-instances*         (atom {})
@@ -67,12 +68,13 @@
         first-init? (nil? @(::world/atom* game))
         all-rules   (apply concat (sp/select [sp/ALL ::world/rules] all-systems))
         all-init    (sp/select [sp/ALL ::world/init-fn some?] all-systems)
-        reload-fns  (sp/select [sp/ALL ::world/reload-fn some?] all-systems)]
+        reload-fns  (sp/select [sp/ALL ::world/reload-fn some?] all-systems)
+        render-fns  (sp/select [sp/ALL ::world/render-fn some?] all-systems)]
+    (reset! (::render-fns* game) render-fns)
     (swap! (::world/atom* game)
            (fn [world]
              (-> (world/init-world game world all-rules reload-fns)
-                 (as-> w (reduce (fn [w init-fn]
-                                   (init-fn game w)) w all-init))
+                 (as-> w (reduce (fn [w init-fn] (init-fn game w)) w all-init))
                  (window/set-window game-width game-height)
                  (chapter1/init first-init?)
                  (o/fire-rules))))
@@ -87,7 +89,7 @@
 (defn make-limited-logger [limit]
   (let [counter (atom 0)]
     (fn [{world* ::world/atom*} & args]
-      ;; evaling game (first arg) as a whole will blow up js stack 
+      ;; evaling the ::world/atom* will blow up js stack 
       (let [messages (apply str args)]
         (when (< @counter limit)
           (println messages)
@@ -120,9 +122,9 @@
                              (update :viewport assoc :width game-width :height game-height)))
           (tiled/render-tiled-map game camera game-width game-height)
           (sprites/render game world camera game-width game-height)
-          (dialogues/render game world camera game-width game-height)
-          (texts/render game world camera game-width game-height)
-          (shader/render-shader-esses game world game-width game-height)))
+          (shader/render-shader-esses game world game-width game-height)
+          (doseq [render-fn @(::render-fns* game)]
+            (render-fn game world camera game-width game-height))))
       #?(:clj (catch Exception err (throw err))
          :cljs (catch js/Error err (log-once game "tick-error" err)))))
   game)

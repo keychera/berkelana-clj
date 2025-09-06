@@ -21,14 +21,36 @@
 (world/system system
   {::world/init-fn
    (fn [_game world]
-     (o/insert  world ::test ::counter 0))
+     (o/insert world ::test ::counter 0))
 
    ::world/rules
    (o/ruleset
     {::counter
      [:what
       [::test ::texts texts]
-      [::test ::counter cnt]]})})
+      [::test ::counter cnt]]})
+
+   ::world/render-fn
+   (fn text-render [game world camera game-width game-height]
+     (let [x 32 y 128
+           {:keys [texts cnt]} (first (o/query-all world ::counter))
+           {:keys [font-entity dynamic-entity]} @(::font-instances* game)]
+       (when (and font-entity dynamic-entity texts)
+         (let [text (subvec texts 0 (mod cnt (inc (count texts))))]
+           (c/render game (-> (reduce
+                               (partial apply chars/assoc-char)
+                               dynamic-entity
+                               (for [line-num (range (count text))
+                                     char-num (range (count (nth text line-num)))
+                                     :let [ch (get-in text [line-num char-num])]]
+                                 [line-num char-num
+                                  (-> font-entity
+                                      (chars/crop-char ch)
+                                      (t/color [1 1 1 1]))]))
+                              (t/project game-width game-height)
+                              (t/invert camera)
+                              (t/translate (+ x 8) (- y 26))
+                              (t/scale 0.2 0.2)))))))})
 
 (defn init [game]
   (#?(:clj load-font-clj :cljs load-font-cljs)
@@ -39,24 +61,3 @@
        (swap! (::font-instances* game) assoc
               :font-entity font-entity
               :dynamic-entity dynamic-entity)))))
-
-(defn render [game world camera game-width game-height]
-  (let [x 32 y 128
-        {:keys [texts cnt]} (first (o/query-all world ::counter))
-        {:keys [font-entity dynamic-entity]} @(::font-instances* game)]
-    (when (and font-entity dynamic-entity texts)
-      (let [text (subvec texts 0 (mod cnt (inc (count texts))))]
-        (c/render game (-> (reduce
-                            (partial apply chars/assoc-char)
-                            dynamic-entity
-                            (for [line-num (range (count text))
-                                  char-num (range (count (nth text line-num)))
-                                  :let [ch (get-in text [line-num char-num])]]
-                              [line-num char-num
-                               (-> font-entity
-                                   (chars/crop-char ch)
-                                   (t/color [1 1 1 1]))]))
-                           (t/project game-width game-height)
-                           (t/invert camera)
-                           (t/translate (+ x 8) (- y 26))
-                           (t/scale 0.2 0.2)))))))
