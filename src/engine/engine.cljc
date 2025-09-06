@@ -86,13 +86,12 @@
 
 (defn make-limited-logger [limit]
   (let [counter (atom 0)]
-    (fn [game & args]
-      (let [game-passed? (s/valid? ::world/atom* game)
-            messages     (if game-passed? (apply str args) (apply str game args))]
+    (fn [{world* ::world/atom*} & args]
+      ;; evaling game (first arg) as a whole will blow up js stack 
+      (let [messages (apply str args)]
         (when (< @counter limit)
           (println messages)
-          (when game-passed?
-            (swap! (::world/atom* game) #(-> % (dev-only/warn messages))))
+          (some-> world* (swap!  #(-> % (dev-only/warn messages))))
           (swap! counter inc))
         (when (= @counter limit)
           (println "[SUPRESSED]" messages)

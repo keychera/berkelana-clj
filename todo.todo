@@ -103,8 +103,9 @@ bugs:
     ☐ sometimes inputs are not responsive the first seconds interacting with the game
     ☐ the animation sometimes "slides", still feel jaggy at times
     ☐ rendering order in jvm is different
-    ☐ instances/assoc (seemingly) blows up js call stack when nulls are passed. need triage
-        ☐ I think not instance, it seems inserting value with invalid spec blows up js stack
+    ✘ instances/assoc (seemingly) blows up js call stack when nulls are passed. need triage @cancelled(25-09-06 10:17)
+        ✘ I think not instance, it seems inserting value with invalid spec blows up js stack @cancelled(25-09-06 10:17)
+            ✔ is my log-once fn that blows up the stack, it tries to print game map full of atom (I think that's what caused it) @done(25-09-06 10:18)
     ☐ retraction is more expensive on jvm than on js (see 6ecedbae90d7ab0568f06ff9990a2c06d6a59243)
     ☐ leaky pixel on object from tiledmap (tiledmap not relevant i think)
 
