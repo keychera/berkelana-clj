@@ -49,7 +49,7 @@ todo:
     
     ☐ Interactable
         ☐ switches
-        ☐ pushable
+        ✔ pushable @done(25-09-06 09:24)
         ☐ talkable
         ☐ move to another room
 
@@ -93,7 +93,8 @@ todo:
             ✔ also what's with that macro for slurp hack? @done(25-08-12 04:15) so it is compile-time stuff'
        
 
-    ☐ the game...
+    ☐ Helltaker
+        
 
 bugs:
     ☐ multiple input keys at once (movement arrow up and left for example)
@@ -105,6 +106,7 @@ bugs:
     ☐ instances/assoc (seemingly) blows up js call stack when nulls are passed. need triage
         ☐ I think not instance, it seems inserting value with invalid spec blows up js stack
     ☐ retraction is more expensive on jvm than on js (see 6ecedbae90d7ab0568f06ff9990a2c06d6a59243)
+    ☐ leaky pixel on object from tiledmap (tiledmap not relevant i think)
 
 
 devs:

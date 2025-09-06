@@ -25,14 +25,12 @@
       [esse-id ::sprite-from-asset asset-id]
       [asset-id ::asset/loaded? true]]})})
 
-(add-tap #(def hmm %))
-(comment
-  hmm)
-
 ;; nulls are nasty here, it makes the browser js callstack blowup (Idk why)
 (defn render [game world camera game-width game-height]
   (let [db @(:db* (first (o/query-all world ::asset/db*)))
-        asset-id->esses (->> (o/query-all world ::sprite-esse) (group-by :asset-id))]
+        asset-id->esses (->> (o/query-all world ::sprite-esse)
+                             (group-by :asset-id)
+                             (sort-by (comp {:id/worldmap  1 :id/berkelana 2} first)))]
     (doseq [[asset-id esses] asset-id->esses]
       (let [asset-type (-> (get db asset-id) ::asset/type)
             instanced  (::instanceable/instanced
