@@ -1,10 +1,9 @@
 (ns rules.dialogues
   (:require
-   #?(:clj [engine.macros :refer [s->]]
-      :cljs [engine.macros :refer-macros [s->]])
    [assets.assets :as asset]
    [assets.texts :as texts]
    [clojure.spec.alpha :as s]
+   [engine.macros :refer [s->]]
    [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]

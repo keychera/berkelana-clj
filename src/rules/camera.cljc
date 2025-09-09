@@ -1,8 +1,7 @@
 (ns rules.camera
   (:require
-   #?(:clj [engine.macros :refer [s->]]
-      :cljs [engine.macros :refer-macros [s->]])
    [clojure.spec.alpha :as s]
+   [engine.macros :refer [s->]]
    [odoyle.rules :as o]
    [play-cljc.transforms :as t]
    [rules.window :as window]))

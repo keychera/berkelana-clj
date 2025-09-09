@@ -1,11 +1,10 @@
 (ns rules.shader
   (:require
-   #?(:clj [engine.macros :refer [insert! s->]]
-      :cljs [engine.macros :refer-macros [s-> insert!]])
    #?(:clj  [play-cljc.macros-java :refer [gl]]
       :cljs [play-cljc.macros-js :refer-macros [gl]])
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as specter]
+   [engine.macros :refer [insert! s->]]
    [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
@@ -63,7 +62,6 @@
            (= pos.y (+ pos.y (* "0.1" (sin (+ (* pos.x "2.0") u_time)))))
            (= gl_Position (vec4 (.xy (* u_matrix (vec3 pos 1))) 0 1)))}})
 
-
 (def fragment-shader
   {:version   "300 es",
    :precision "mediump float"
@@ -95,16 +93,14 @@
                     'u_time   0}}
       (entities-2d/map->TwoDEntity)))
 
-
-
 (defn load-shader [game]
   (doseq [{:keys [esse-id shader-fn]} (o/query-all @(::world/atom* game) ::load-shader)]
     (println "loading shader for" esse-id)
     (swap! (::world/atom* game) #(o/insert % esse-id ::loading? true))
     (try (let [compiled-shader (c/compile game (shader-fn game))]
            (swap! (::world/atom* game) #(-> %
-                                (o/retract esse-id ::loading?)
-                                (o/insert esse-id ::compiled-shader compiled-shader))))
+                                            (o/retract esse-id ::loading?)
+                                            (o/insert esse-id ::compiled-shader compiled-shader))))
          (catch #?(:clj Exception :cljs js/Error) err ;; maybe devonly
            (swap! (::world/atom* game) #(-> % (o/retract esse-id ::loading?)))
            (throw err)))))

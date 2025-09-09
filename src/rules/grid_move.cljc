@@ -1,16 +1,15 @@
 (ns rules.grid-move
   (:require
-   #?(:clj [engine.macros :refer [s->]]
-      :cljs [engine.macros :refer-macros [s->]])
    [assets.assets :as asset]
    [assets.tiled :as tiled]
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as sp]
+   [engine.macros :refer [s->]]
+   [engine.world :as world]
    [odoyle.rules :as o]
    [rules.input :as input]
    [rules.pos2d :as pos2d]
-   [rules.time :as time]
-   [engine.world :as world]))
+   [rules.time :as time]))
 
 ; init
 (s/def ::move-duration number?)

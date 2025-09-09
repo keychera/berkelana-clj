@@ -1,8 +1,7 @@
 (ns rules.ubim
   (:require
-   #?(:clj [engine.macros :refer [insert!]]
-      :cljs [engine.macros :refer-macros [insert!]])
    [clojure.spec.alpha :as s]
+   [engine.macros :refer [insert!]]
    [odoyle.rules :as o]
    [rules.input :as input]
    [rules.sprites :as sprites]
