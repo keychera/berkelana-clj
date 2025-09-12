@@ -160,9 +160,11 @@
         (reduce
          (fn [acc [tile uncompiled-entity]]
            (let [i (get-in acc [(:firstgid tile) :i])]
-             (-> acc
-                 (update-in [(:firstgid tile) :entity] #(instances/assoc % i uncompiled-entity))
-                 (update-in [(:firstgid tile) :i] inc))))
+             (if (< (:tile-x tile) 8)
+               (-> acc
+                   (update-in [(:firstgid tile) :entity] #(instances/assoc % i uncompiled-entity))
+                   (update-in [(:firstgid tile) :i] inc))
+               acc)))
          firstgid->compiled-entity
          (map vector (:tiles tiled-map) (:entities tiled-map)))]
     (swap! db*
