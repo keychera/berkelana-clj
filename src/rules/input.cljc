@@ -11,6 +11,7 @@
     38 ::up
     39 ::right
     40 ::down
+    82 ::r
     nil))
 
 (s/def ::x number?)

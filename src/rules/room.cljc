@@ -3,13 +3,18 @@
    [assets.assets :as asset]
    [assets.tiled :as tiled]
    [clojure.spec.alpha :as s]
+   [com.rpl.specter :as sp]
+   [engine.macros :refer [s->]]
    [engine.world :as world]
    [odoyle.rules :as o]
    [play-cljc.gl.core :as c]
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
-   [com.rpl.specter :as sp]))
+   [rules.camera :as camera]
+   [rules.input :as input]
+   [rules.pos2d :as pos2d]))
 
+(s/def ::active keyword?)
 (s/def ::boundary map?)
 (s/def ::use keyword?)
 
@@ -19,20 +24,39 @@
   {::world/init-fn
    (fn test-room [_ world]
      (-> world
+         (o/insert ::world/global ::active :room/home)
+         (o/insert ::camera/camera ::pos2d/pos2d {:x -8 :y 0})
+         (o/insert :room/yard {::boundary {:x 0 :y 0 :width 8 :height 8}
+                               ::use      :id/worldmap})
          (o/insert :room/home {::boundary {:x 8 :y 0 :width 8 :height 8}
                                ::use      :id/worldmap})))
 
    ::world/rules
    (o/ruleset
-    {::active-room
+    {::test-cycle-room
      [:what
+      [::input/r ::input/pressed-key ::input/keydown]
+      [::world/global ::active room-id {:then false}]
+      [room-id ::boundary boundary {:then false}]
+      :then
+      (s-> session
+           (o/insert ::world/global ::active
+                     (case room-id
+                       :room/home :room/yard
+                       :room/yard :room/home)))]
+
+     ::active-room
+     [:what
+      [::world/global ::active room-id]
       [room-id ::boundary boundary]
       [room-id ::use asset-id]
       [asset-id ::asset/loaded? true]
       [::world/global ::world/game game]
       [::asset/global ::asset/db* db*]
       :then
-      (load-room game db* asset-id boundary)]})
+      (load-room game db* asset-id boundary)
+      (s-> session
+           (o/insert ::camera/camera ::pos2d/pos2d {:x (- (:x boundary)) :y (- (:y boundary))}))]})
 
    ::world/render-fn
    (fn [game _world camera game-width game-height]
@@ -52,8 +76,7 @@
   (let [{::tiled/keys [tiled-map firstgid->instanced-map]} (get @(::asset/db* game) asset-id)
         instanced-room (reduce
                         (fn [acc tile]
-                          (let [i (or (get-in acc [(:firstgid tile) :i]) 0)
-                                ]
+                          (let [i (or (get-in acc [(:firstgid tile) :i]) 0)]
                             (if (in-boundary? (:tile-x tile) (:tile-y tile) boundary)
                               (-> acc
                                   (update-in [(:firstgid tile) :entity] #(instances/assoc % i (:tile-img tile)))
@@ -63,6 +86,5 @@
                         (:tiles tiled-map))]
     (swap! db* #(-> % (update asset-id merge {::instanced (->> instanced-room
                                                                (map (fn [[k v]] {:firstgid k :instanced-map v})))})))))
-
 
 (sp/transform [sp/MAP-VALS :entity] inc {1 {:entity 2} 2 {:entity 4}})
