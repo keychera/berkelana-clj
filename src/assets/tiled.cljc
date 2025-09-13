@@ -22,16 +22,12 @@
 (s/def ::tilesets-loaded? boolean?)
 (s/def ::for keyword?)
 
-(s/def ::objects-loaded? boolean?)
-
 (def rules
   (o/ruleset
    {::tilesets-to-load
     [:what
      [tileset-name ::tilesets-loaded? loaded?]
      [tileset-name ::for asset-id]
-     [::world/global ::world/game game]
-     [::asset/global ::asset/db* db*]
      :then
      (let [to-load     (o/query-all session ::tilesets-to-load)
            all-loaded? (reduce #(and (:loaded? %1) (:loaded? %2)) to-load)]
@@ -39,12 +35,17 @@
          (s-> session
               (o/retract tileset-name ::tilesets-loaded?)
               (o/retract tileset-name ::for)
-              (o/insert asset-id ::asset/loaded? true))
-         (load-tile-instances game db* asset-id)))]
+              (o/insert asset-id ::asset/loaded? true))))]
 
-    ::objects-loaded?
+    ::rooms-to-load
     [:what
-     [::global ::objects-loaded? loaded?]]}))
+     [tileset-name ::for asset-id]
+     [asset-id ::asset/loaded? true]
+     [::world/global ::world/game game]
+     [::asset/global ::asset/db* db*]
+     :then
+     (let [room {:x 1 :y 1 :width 6 :height 6}]
+       (load-tile-instances game db* asset-id room))]}))
 
 ;; gids is sorted descendingly
 (defn find-firstgid [id firstgids]
@@ -53,7 +54,11 @@
      (if (< id v) id (reduced v)))
    id firstgids))
 
-(defn load-tile-instances [game db* asset-id]
+(defn pos-in-room? [x y room]
+  (and (>= x (:x room)) (< x (+ (:x room) (:width room)))
+       (>= y (:y room)) (< y (+ (:y room) (:height room)))))
+
+(defn load-tile-instances [game db* asset-id room]
   (let [asset-data (get @db* asset-id)
         firstgid->tileset (:firstgid->tileset asset-data)
 
@@ -149,7 +154,7 @@
         firstgid->instanced-entity (reduce
                                     (fn [acc tile]
                                       (let [i (get-in acc [(:firstgid tile) :i])]
-                                        (if (< (:tile-x tile) 8)
+                                        (if (pos-in-room? (:tile-x tile) (:tile-y tile) room)
                                           (-> acc
                                               (update-in [(:firstgid tile) :entity] #(instances/assoc % i (:tile-img tile)))
                                               (update-in [(:firstgid tile) :i] inc))
@@ -159,9 +164,9 @@
     (swap! db*
            #(-> %
                 (update asset-id merge
-                        {::tiled-map (-> tiled-map
-                                         (merge (vars->map map-width map-height)))
-                         ::firstgid->entity firstgid->instanced-entity})))))
+                        {::tiled-map (-> tiled-map (merge (vars->map map-width map-height)))
+                         ::instanced (->> firstgid->instanced-entity
+                                          (map (fn [[k v]] {:firstgid k :instanced-map v})))})))))
 
 (defn parse-value-type [{:keys [value type]}]
   (case type
@@ -250,10 +255,10 @@
                                             (o/fire-rules)))))))))
 
 (defn render-tiled-map [game camera game-width game-height]
-  (let [{:keys [::firstgid->entity]} (get @(::asset/db* game) :id/worldmap)
-        tile-size (-> firstgid->entity (get 1) :tile-size)]
-    (doseq [[_ entity] (->> firstgid->entity (sort-by (fn [[gid _v]] gid)))]
-      (c/render game (-> (:entity entity)
+  (let [{:keys [::instanced]} (get @(::asset/db* game) :id/worldmap)
+        tile-size (-> instanced first :instanced-map :tile-size)]
+    (doseq [entity (->> instanced (sort-by :firstgid) (map :instanced-map) (map :entity))]
+      (c/render game (-> entity
                          (t/project game-width game-height)
                          (t/invert camera)
                          (t/scale tile-size tile-size))))))
