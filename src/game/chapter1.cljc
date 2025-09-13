@@ -19,7 +19,7 @@
                    #::tiled{:parsed-tmx tiled/world-map-tmx})))
       ;; need to understand why this separation preserve the player pos on reload
       (esse :chara/ubim 
-            grid-move/default #::grid-move{:pos-x 2 :pos-y 4}
+            grid-move/default #::grid-move{:pos-x 10 :pos-y 4}
             #::sprites{:sprite-from-asset :id/berkelana :frame-index 0}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
       (esse :prop/bucket

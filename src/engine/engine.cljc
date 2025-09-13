@@ -33,7 +33,6 @@
 
 (def all-rules-legacy-abstraction
   [window/rules
-   camera/rules
    time/rules
    input/rules
    tiled/rules
@@ -45,6 +44,7 @@
 (def all-systems
   ;; gonna refactor everything to this
   (concat [assets/system
+           camera/system
            dialogues/system
            texts/system
            sprites/system
