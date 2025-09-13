@@ -29,6 +29,7 @@
 (s/def ::move-x number?)
 (s/def ::move-y number?)
 (s/def ::move-delay number?)
+(s/def ::teleport boolean?)
 
 (s/def ::move-plan #{::idle ::plan-move ::check-world-boundaries ::check-unwalkable ::check-pushable ::allow-push ::allow-move ::prevent-move})
 (s/def ::pushing any?)
@@ -43,9 +44,23 @@
    (o/ruleset
     {::position-on-init
      [:what
+      [esse-id ::pos-x _ {:then false}] ;; assuming having this fact means esse is using grid-move
+      [:id/worldmap ::asset/loaded? true]
+      :then
+      (s-> session (o/insert esse-id ::teleport true))]
+
+     ::teleport
+     [:what
       [esse-id ::pos-x pos-x {:then false}]
       [esse-id ::pos-y pos-y {:then false}]
-      [:id/worldmap ::asset/loaded? true]
+      [esse-id ::teleport true]
+      ;; at this point, I finally understood that boolean in rules engine world...
+      ;; ...is not like a flag where true here would make the rules fire every frame
+      ;; rules engine does not care if it's true, it only care that new fact containing true is inserted
+      ;; if there is no new fact inserted that this rules "see" then the rule won't fire
+      ;; so if the rules is [esse-id ::teleport false], and then we (o/insert world esse-id ::teleport false)
+      ;; the rule will behave the same way.
+      ;; I am making this note to mark my understanding
       :then
       (s-> session (o/insert esse-id {::move-plan ::idle ::pos2d/x (* grid pos-x) ::pos2d/y (* grid pos-y)}))]
 

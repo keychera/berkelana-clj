@@ -11,6 +11,7 @@
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
    [rules.camera :as camera]
+   [rules.grid-move :as grid-move]
    [rules.input :as input]
    [rules.pos2d :as pos2d]))
 
@@ -43,7 +44,11 @@
            (o/insert ::world/global ::active
                      (case room-id
                        :room/home :room/yard
-                       :room/yard :room/home)))]
+                       :room/yard :room/home))
+           (o/insert :chara/ubim 
+                     (case room-id
+                       :room/home  #::grid-move{:teleport true :pos-x 2 :pos-y 4}
+                       :room/yard  #::grid-move{:teleport true :pos-x 10 :pos-y 4}) ))]
 
      ::active-room
      [:what
