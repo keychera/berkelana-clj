@@ -28,24 +28,17 @@
     [:what
      [tileset-name ::tilesets-loaded? loaded?]
      [tileset-name ::for asset-id]
+     [::world/global ::world/game game]
+     [::asset/global ::asset/db* db*]
      :then
      (let [to-load     (o/query-all session ::tilesets-to-load)
            all-loaded? (reduce #(and (:loaded? %1) (:loaded? %2)) to-load)]
        (when all-loaded?
+         (load-tile-instances game db* asset-id)
          (s-> session
               (o/retract tileset-name ::tilesets-loaded?)
               (o/retract tileset-name ::for)
-              (o/insert asset-id ::asset/loaded? true))))]
-
-    ::rooms-to-load
-    [:what
-     [tileset-name ::for asset-id]
-     [asset-id ::asset/loaded? true]
-     [::world/global ::world/game game]
-     [::asset/global ::asset/db* db*]
-     :then
-     (let [room {:x 1 :y 1 :width 6 :height 6}]
-       (load-tile-instances game db* asset-id room))]}))
+              (o/insert asset-id ::asset/loaded? true))))]}))
 
 ;; gids is sorted descendingly
 (defn find-firstgid [id firstgids]
@@ -54,11 +47,7 @@
      (if (< id v) id (reduced v)))
    id firstgids))
 
-(defn pos-in-room? [x y room]
-  (and (>= x (:x room)) (< x (+ (:x room) (:width room)))
-       (>= y (:y room)) (< y (+ (:y room) (:height room)))))
-
-(defn load-tile-instances [game db* asset-id room]
+(defn load-tile-instances [game db* asset-id]
   (let [asset-data (get @db* asset-id)
         firstgid->tileset (:firstgid->tileset asset-data)
 
@@ -138,35 +127,24 @@
                    tiled-map
                    objectgroup)
 
-        firstgid->compiled-entity (update-vals
+        firstgid->instanced-map (update-vals
                                    firstgid->tileset
                                    (fn [tileset]
                                      (-> tileset
-                                         (assoc :i 0)
                                          (update :entity
                                                  (fn [entity]
                                                    (let [instanced (c/compile game (instances/->instanced-entity entity))
                                                          keyname   (keyword (:name tileset))]
                                                      (swap! db* assoc-in [asset-id keyname ::instanceable/raw] entity)
                                                      (swap! db* assoc-in [asset-id keyname ::instanceable/instanced] instanced)
-                                                     instanced))))))
-
-        firstgid->instanced-entity (reduce
-                                    (fn [acc tile]
-                                      (let [i (get-in acc [(:firstgid tile) :i])]
-                                        (if (pos-in-room? (:tile-x tile) (:tile-y tile) room)
-                                          (-> acc
-                                              (update-in [(:firstgid tile) :entity] #(instances/assoc % i (:tile-img tile)))
-                                              (update-in [(:firstgid tile) :i] inc))
-                                          acc)))
-                                    firstgid->compiled-entity
-                                    (:tiles tiled-map))]
-    (swap! db*
-           #(-> %
-                (update asset-id merge
-                        {::tiled-map (-> tiled-map (merge (vars->map map-width map-height)))
-                         ::instanced (->> firstgid->instanced-entity
-                                          (map (fn [[k v]] {:firstgid k :instanced-map v})))})))))
+                                                     instanced))))))]
+    ;; NOTE this ns now doesnt do any rendering
+    ;; this ns provide ::tiled-map and ::instanced-map, which right now being rendered by rules.room
+    ;; and ::instanceable/raw + ::instanceable/instanced, which is used by rules.sprite
+    ;; still feel like these names have some overlap but not important rn
+    (swap! db* #(update % asset-id merge
+                        {::tiled-map               (merge tiled-map (vars->map map-width map-height))
+                         ::firstgid->instanced-map firstgid->instanced-map}))))
 
 (defn parse-value-type [{:keys [value type]}]
   (case type
@@ -253,16 +231,6 @@
            (swap! (::world/atom* game) #(-> %
                                             (o/insert (:name tileset) ::tilesets-loaded? true)
                                             (o/fire-rules)))))))))
-
-(defn render-tiled-map [game camera game-width game-height]
-  (let [{:keys [::instanced]} (get @(::asset/db* game) :id/worldmap)
-        tile-size (-> instanced first :instanced-map :tile-size)]
-    (doseq [entity (->> instanced (sort-by :firstgid) (map :instanced-map) (map :entity))]
-      (c/render game (-> entity
-                         (t/project game-width game-height)
-                         (t/invert camera)
-                         (t/scale tile-size tile-size))))))
-;; this is SCROT from below
 
 (comment
   (= (handle-tile-props

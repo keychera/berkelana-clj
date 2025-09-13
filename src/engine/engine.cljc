@@ -19,6 +19,7 @@
    [rules.dialogues :as dialogues]
    [rules.grid-move :as grid-move]
    [rules.input :as input]
+   [rules.room :as room]
    [rules.shader :as shader]
    [rules.sprites :as sprites]
    [rules.time :as time]
@@ -47,7 +48,8 @@
            dialogues/system
            texts/system
            sprites/system
-           grid-move/system]
+           grid-move/system
+           room/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
 (defn ->game [context]
@@ -119,11 +121,10 @@
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))
-          (tiled/render-tiled-map game camera game-width game-height)
-          (sprites/render game world camera game-width game-height)
           (shader/render-shader-esses game world game-width game-height)
           (doseq [render-fn @(::render-fns* game)]
-            (render-fn game world camera game-width game-height))))
+            (render-fn game world camera game-width game-height))
+          (sprites/render game world camera game-width game-height)))
       #?(:clj (catch Exception err (throw err))
          :cljs (catch js/Error err (log-once game "tick-error" err)))))
   game)
