@@ -33,7 +33,7 @@
 (s/def ::move-plan #{::idle ::plan-move ::check-world-boundaries ::check-unwalkable ::check-pushable ::allow-push ::allow-move ::prevent-move})
 (s/def ::pushing any?)
 
-(def sp->layers->props (sp/path [:id/worldmap ::tiled/tiled-map :layers (sp/multi-path "Structures" "Interactables")]))
+(def sp->layers->props (sp/path [:id/worldmap ::tiled/tiled-map :layers (sp/multi-path "Structures" "Interactables" "Terrain")]))
 (def sp->map-dimension (sp/multi-path [:id/worldmap ::tiled/tiled-map :map-width]
                                       [:id/worldmap ::tiled/tiled-map :map-height]))
 
