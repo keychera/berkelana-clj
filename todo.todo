@@ -129,11 +129,12 @@ devs:
         ✔ make fps counter in java side @done(25-09-03 07:26)
 
     ☐ try vybes and maybe flecs if we can incorporate rules engine or our 2d stuff (https://github.com/pfeodrippe/vybe)
-    ☐ that spritesheet file is just images with metadata
+    ✔ that spritesheet file is just images with metadata @done(25-09-13 10:43) not sure what this is actually
 
-    ☐ profile memory
+    ✔ profile memory @done(25-09-13 10:44) 
+        ☐ some prelim check with browser inspector, memory tab. heap size in dev build around > 130mb at first and keep rising to around 400mb and then drop to 80mb (why?), prod build around 20mbs 
     ☐ explore graalvm...👀?
-    ☐ moves cljs dev to src-dev-js
+    ✔ moves cljs dev to src-dev-js @done(25-09-13 10:43)
     
 
 
