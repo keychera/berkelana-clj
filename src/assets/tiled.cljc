@@ -1,7 +1,6 @@
 (ns assets.tiled
   (:require
-   #?(:clj [engine.macros :refer [read-tiled-map-on-compile s-> vars->map]]
-      :cljs [engine.macros :refer-macros [vars->map s-> read-tiled-map-on-compile]])
+   [engine.macros :refer [read-tiled-map-on-compile s-> vars->map]]
    [assets.assets :as asset]
    [clojure.edn :as edn]
    [clojure.spec.alpha :as s]
@@ -24,7 +23,6 @@
 (s/def ::for keyword?)
 
 (s/def ::objects-loaded? boolean?)
-(s/def ::object any?)
 
 (def rules
   (o/ruleset
@@ -59,119 +57,109 @@
   (let [asset-data (get @db* asset-id)
         firstgid->tileset (:firstgid->tileset asset-data)
 
-        firstgid->tileset
-        (update-vals
-         firstgid->tileset
-         (fn [{:keys [tileheight tilewidth entity]
-               :as   tileset}]
-           (let [image       (:image tileset)
-                 tiles-vert  (/ (:height image) tileheight)
-                 tiles-horiz (/ (:width image) tilewidth)
-                 images      (vec
-                              (for [y (range tiles-vert)
-                                    x (range tiles-horiz)]
-                                (t/crop entity
-                                        (* x tilewidth)
-                                        (* y tileheight)
-                                        (- tilewidth 1)
-                                        (- tileheight 1))))]
-             (assoc tileset :images images :tile-size tilewidth :width (:width image))))) ;; assuming square tiles
+        firstgid->tileset (update-vals
+                           firstgid->tileset
+                           (fn [{:keys [tileheight tilewidth entity] :as tileset}]
+                             (let [image       (:image tileset)
+                                   tiles-vert  (/ (:height image) tileheight)
+                                   tiles-horiz (/ (:width image) tilewidth)
+                                   images      (vec
+                                                (for [y (range tiles-vert)
+                                                      x (range tiles-horiz)]
+                                                  (t/crop entity
+                                                          (* x tilewidth)
+                                                          (* y tileheight)
+                                                          (- tilewidth 1)
+                                                          (- tileheight 1))))]
+                               (assoc tileset
+                                      :images images
+                                      :tile-size tilewidth
+                                      :width (:width image))))) ;; assuming square tiles
 
         {:keys [layers objectgroup map-width map-height firstgids]} asset-data
 
-        tiled-map
-        (reduce-kv
-         (fn [tiled-map' layer-name layer]
-           (reduce
-            (fn [tiled-map'' i]
-              (let [x        (mod i map-width)
-                    y        (int (/ i map-width))
-                    gid      (nth layer i)
-                    firstgid (find-firstgid gid firstgids)
-                    localid  (- gid firstgid)
-                    tileset  (get firstgid->tileset firstgid)
-                    props    (:tile-props tileset)
-                    tile     (when (>= gid 1)
-                               {:layer    layer-name
-                                :tile-x   x
-                                :tile-y   y
-                                :firstgid firstgid
-                                :localid  localid
-                                ::props   (get props localid)})]
-                (cond-> tiled-map''
-                  true
-                  (assoc-in [:layers layer-name x y] tile)
-                  tile
-                  (update :tiles conj tile)
-                  tile
-                  (update :entities conj (t/translate (nth (:images tileset) localid) x y)))))
-            tiled-map'
-            (range (count layer))))
-         {:layers {} :tiles [] :entities []}
-         layers)
+        tiled-map (reduce-kv
+                   (fn [tiled-map' layer-name all-gids]
+                     (reduce
+                      (fn [tiled-map'' i]
+                        (let [x        (mod i map-width)
+                              y        (int (/ i map-width))
+                              gid      (nth all-gids i)
+                              firstgid (find-firstgid gid firstgids)
+                              localid  (- gid firstgid)
+                              tileset  (get firstgid->tileset firstgid)
+                              props    (:tile-props tileset)
+                              tile     (when (>= gid 1)
+                                         {:layer    layer-name
+                                          :tile-x   x
+                                          :tile-y   y
+                                          :firstgid firstgid
+                                          :localid  localid
+                                          :tile-img (t/translate (nth (:images tileset) localid) x y)
+                                          ::props   (get props localid)})]
+                          (cond-> tiled-map''
+                            :always      (assoc-in [:layers layer-name x y] tile)
+                            (some? tile) (update :tiles conj tile))))
+                      tiled-map'
+                      (range (count all-gids))))
+                   {:layers {} :tiles []}
+                   layers)
 
-        tiled-map
-        (reduce-kv
-         (fn [tiled-map' _id {::keys [layer-name objects]}]
-           (reduce
-            (fn [tiled-map'' object]
-              (let [tile-h   (:height object)
-                    _        (assert (= tile-h (:width object))
-                                     "assuming square tiles")
-                    x        (/ (:x object) tile-h)
-                    y        (dec (/ (:y object) tile-h)) ;; not sure why this needs decrement
-                    gid      (:gid object)
-                    firstgid (find-firstgid gid firstgids)
-                    localid  (- gid firstgid)
-                    tileset  (get firstgid->tileset firstgid)
-                    tile     (when (>= gid 1)
-                               (merge {:layer    layer-name
-                                       :tile-x   x
-                                       :tile-y   y
-                                       :firstgid firstgid
-                                       :localid  localid}
-                                      object))]
-                (cond-> tiled-map''
-                  true
-                  (assoc-in [:layers layer-name x y] tile)
-                  tile
-                  (update :tiles conj tile)
-                  tile
-                  (update :entities conj (t/translate (nth (:images tileset) localid) x y)))))
-            tiled-map'
-            objects))
-         tiled-map
-         objectgroup)
+        tiled-map (reduce-kv
+                   (fn [tiled-map' _id {::keys [layer-name objects]}]
+                     (reduce
+                      (fn [tiled-map'' object]
+                        (let [tile-h   (:height object)
+                              _        (assert (= tile-h (:width object)) "assuming square tiles")
+                              x        (/ (:x object) tile-h)
+                              y        (dec (/ (:y object) tile-h)) ;; not sure why this needs decrement
+                              gid      (:gid object)
+                              firstgid (find-firstgid gid firstgids)
+                              localid  (- gid firstgid)
+                              tileset  (get firstgid->tileset firstgid)
+                              tile     (when (>= gid 1)
+                                         (merge {:layer    layer-name
+                                                 :tile-x   x
+                                                 :tile-y   y
+                                                 :firstgid firstgid
+                                                 :tile-img (t/translate (nth (:images tileset) localid) x y)
+                                                 :localid  localid}
+                                                object))]
+                          (cond-> tiled-map''
+                            :always      (assoc-in [:layers layer-name x y] tile)
+                            (some? tile) (update :tiles conj tile))))
+                      tiled-map'
+                      objects))
+                   tiled-map
+                   objectgroup)
 
-        firstgid->compiled-entity
-        (update-vals
-         firstgid->tileset
-         (fn [tileset]
-           (-> tileset
-               (assoc :i 0)
-               (update :entity (fn [entity]
-                                 (let [instanced (c/compile game (instances/->instanced-entity entity))
-                                       keyname   (keyword (:name tileset))]
-                                   (swap! db* assoc-in [asset-id keyname ::instanceable/raw] entity)
-                                   (swap! db* assoc-in [asset-id keyname ::instanceable/instanced] instanced)
-                                   instanced))))))
+        firstgid->compiled-entity (update-vals
+                                   firstgid->tileset
+                                   (fn [tileset]
+                                     (-> tileset
+                                         (assoc :i 0)
+                                         (update :entity
+                                                 (fn [entity]
+                                                   (let [instanced (c/compile game (instances/->instanced-entity entity))
+                                                         keyname   (keyword (:name tileset))]
+                                                     (swap! db* assoc-in [asset-id keyname ::instanceable/raw] entity)
+                                                     (swap! db* assoc-in [asset-id keyname ::instanceable/instanced] instanced)
+                                                     instanced))))))
 
-        firstgid->instanced-entity
-        (reduce
-         (fn [acc [tile uncompiled-entity]]
-           (let [i (get-in acc [(:firstgid tile) :i])]
-             (if (< (:tile-x tile) 8)
-               (-> acc
-                   (update-in [(:firstgid tile) :entity] #(instances/assoc % i uncompiled-entity))
-                   (update-in [(:firstgid tile) :i] inc))
-               acc)))
-         firstgid->compiled-entity
-         (map vector (:tiles tiled-map) (:entities tiled-map)))]
+        firstgid->instanced-entity (reduce
+                                    (fn [acc tile]
+                                      (let [i (get-in acc [(:firstgid tile) :i])]
+                                        (if (< (:tile-x tile) 8)
+                                          (-> acc
+                                              (update-in [(:firstgid tile) :entity] #(instances/assoc % i (:tile-img tile)))
+                                              (update-in [(:firstgid tile) :i] inc))
+                                          acc)))
+                                    firstgid->compiled-entity
+                                    (:tiles tiled-map))]
     (swap! db*
            #(-> %
                 (update asset-id merge
                         {::tiled-map (-> tiled-map
-                                         (dissoc :entities)
                                          (merge (vars->map map-width map-height)))
                          ::firstgid->entity firstgid->instanced-entity})))))
 
