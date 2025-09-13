@@ -59,10 +59,10 @@
       :when
       (= esse-id :chara/ubim)
       (<= move-delay 0)
-      (#{:left :right :up :down} keyname)
+      (#{::input/left ::input/right ::input/up ::input/down} keyname)
       :then
-      (let [move-x (case keyname :left -1 :right 1 0)
-            move-y (case keyname :up   -1 :down  1 0)]
+      (let [move-x (case keyname ::input/left -1 ::input/right 1 0)
+            move-y (case keyname ::input/up   -1 ::input/down  1 0)]
         (s-> session
              (o/insert esse-id {::move-plan ::plan-move ::move-x move-x ::move-y move-y})))]
 

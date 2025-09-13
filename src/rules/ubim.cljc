@@ -19,7 +19,7 @@
      [:chara/ubim ::anim-tick anim-tick {:then false}]
      [:chara/ubim ::anim-elapsed-ms anim-elapsed-ms {:then false}]
      :when
-     (#{:left :right :up :down} keyname)
+     (#{::input/left ::input/right ::input/up ::input/down} keyname)
      :then
      (insert! :chara/ubim
               (merge
@@ -29,10 +29,10 @@
                (case keystate
                  ::input/keydown
                  (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
-                   {::sprites/frame-index (- (case keyname :down 1 :left 13 :right 25 :up 37 1) pingpong)})
+                   {::sprites/frame-index (- (case keyname ::input/down 1 ::input/left 13 ::input/right 25 ::input/up 37 1) pingpong)})
 
                  ::input/keyup
                  {::anim-elapsed-ms 0
-                  ::sprites/frame-index (case keyname :down 1 :left 13 :right 25 :up 37 1)}
+                  ::sprites/frame-index (case keyname ::input/down 1 ::input/left 13 ::input/right 25 ::input/up 37 1)}
 
                  {})))]}))
