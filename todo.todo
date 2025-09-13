@@ -135,6 +135,8 @@ devs:
         ☐ some prelim check with browser inspector, memory tab. heap size in dev build around > 130mb at first and keep rising to around 400mb and then drop to 80mb (why?), prod build around 20mbs 
     ☐ explore graalvm...👀?
     ✔ moves cljs dev to src-dev-js @done(25-09-13 10:43)
+
+    ☐ error loses its track most of the time but somehow if we 1. hot-reload the error origin 2. not catch them 3. browser will get the stack trace
     
 
 

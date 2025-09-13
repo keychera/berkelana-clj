@@ -104,7 +104,7 @@
             out-of-map? (let [[map-width map-height] (sp/select sp->map-dimension db)]
                           (and map-width map-height
                                (or (< next-x 0) (< next-y 0) (> next-x (dec map-width)) (> next-y (dec map-height)))))
-            unwalkable?   (or (sp/select-one [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] db) false)]
+            unwalkable?   (or (sp/select-any [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] db) false)]
         (if (or out-of-map? unwalkable?)
           (s-> session (o/insert esse-id {::move-plan ::prevent-move}))
           (s-> session (o/insert esse-id {::move-plan ::check-unwalkable}))))]

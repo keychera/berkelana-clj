@@ -87,28 +87,29 @@
 
 (def camera (e/->camera true))
 
-(defn make-limited-logger [limit]
-  (let [counter (atom 0)]
-    (fn [{world* ::world/atom*} & args]
+#?(:cljs
+   (defn make-limited-logger [limit]
+     (let [counter (atom 0)]
+       (fn [{world* ::world/atom*} err & args]
       ;; evaling the ::world/atom* will blow up js stack 
-      (let [messages (apply str args)]
-        (when (< @counter limit)
-          (println messages)
-          (some-> world* (swap!  #(-> % (dev-only/warn messages))))
-          (swap! counter inc))
-        (when (= @counter limit)
-          (println "[SUPRESSED]" messages)
-          (swap! counter inc))))))
+         (let [messages (apply str args)]
+           (when (< @counter limit)
+             (js/console.error (.-stack err))
+             (some-> world* (swap!  #(-> % (dev-only/warn (str messages (.-message err))))))
+             (swap! counter inc))
+           (when (= @counter limit)
+             (println "[SUPRESSED]" messages)
+             (swap! counter inc)))))))
 
-(def log-once (make-limited-logger 4))
+#?(:cljs (def log-once (make-limited-logger 4)))
 
 (defn tick [game]
   (if @*refresh?
     (try (println "calling (init game)")
          (swap! *refresh? not)
          (init game)
-         #?(:clj (catch Exception err (throw err))
-            :cljs (catch js/Error err (log-once game "init-error" err))))
+         #?(:clj  (catch Exception err (throw err))
+            :cljs (catch js/Error err (log-once game err "[init-error] "))))
     (try
       (let [{:keys [delta-time total-time]} game
             world (swap! (::world/atom* game)
@@ -125,6 +126,14 @@
           (doseq [render-fn @(::render-fns* game)]
             (render-fn game world camera game-width game-height))
           (sprites/render game world camera game-width game-height)))
-      #?(:clj (catch Exception err (throw err))
-         :cljs (catch js/Error err (log-once game "tick-error" err)))))
+      #?(:clj  (catch Exception err (throw err))
+         :cljs (catch js/Error err (log-once game err "[tick-error] ")))))
   game)
+
+(comment
+  (let [hmm-fn #(def hmm %)]
+    (add-tap hmm-fn)
+    (remove-tap hmm-fn))
+
+  (let [db @(::assets/db* hmm)]
+    (sp/select-one [grid-move/sp->layers->props 2 3 some? ::tiled/props :unwalkable] db)))
