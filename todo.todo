@@ -94,7 +94,10 @@ todo:
        
 
     ☐ Helltaker
-        
+
+
+dont solve future problems:
+    ☐ room defined in program should match the boundaries set from tiled editor. dont programmatically solve this.
 
 bugs:
     ☐ multiple input keys at once (movement arrow up and left for example)
