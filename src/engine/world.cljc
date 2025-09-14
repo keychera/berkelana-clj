@@ -19,10 +19,10 @@
 (expound/defmsg ::rules "rules must be odoyle.rules/ruleset\n  e.g. (o/ruleset {...})")
 
 (s/def ::system
-  (s/keys :req [::rules]
-          :opt [::init-fn ::reload-fn ::render-fn]))
+  (s/keys :opt [::rules ::init-fn ::reload-fn ::render-fn]))
 
 #?(:clj
+   ;; if the user of this fn does not require spec
    (defmacro system [name m]
      `(def ~name
         (if (not (s/valid? ::system ~m))
@@ -51,15 +51,18 @@
                   ;; (println :then-finally (:name rule))
                   (f session))}))
 
+
+;; dev-only
+(defn first-init? [game]
+  (= 1 @(::init-cnt* game)))
+
 (defn init-world [game world all-rules reload-fns]
   (let [prev-rules* (::prev-rules* game)
-        init-only?  (nil? world)
-        session     (if init-only?
+        session     (if (first-init? game)
                       (o/->session)
-                       ;; devonly : refresh rules without resetting facts
                       (let [world
                             (reduce (fn [world reload-fn] (reload-fn game world)) world reload-fns)]
-                        (->> @prev-rules* ;; devonly : refresh rules without resetting facts
+                        (->> @prev-rules* ;; dev-only : refresh rules without resetting facts
                              (map :name)
                              (reduce o/remove-rule world))))]
     (reset! prev-rules* all-rules)

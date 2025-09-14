@@ -22,16 +22,7 @@
 (declare load-room)
 
 (world/system system
-  {::world/init-fn
-   (fn test-room [_ world]
-     (-> world
-         (o/insert ::world/global ::active :room/home)
-         (o/insert :room/yard {::boundary {:x 0 :y 0 :width 8 :height 8}
-                               ::use      :id/worldmap})
-         (o/insert :room/home {::boundary {:x 8 :y 0 :width 8 :height 8}
-                               ::use      :id/worldmap})))
-
-   ::world/rules
+  {::world/rules
    (o/ruleset
     {::test-cycle-room
      [:what

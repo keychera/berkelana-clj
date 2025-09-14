@@ -49,7 +49,8 @@
            room/system
            sprites/system
            dialogues/system
-           texts/system]
+           texts/system
+           chapter1/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
 (defn ->game [context]
@@ -57,6 +58,7 @@
    (c/->game context)
    {::render-fns*                   (atom nil)
     ::world/atom*                   (atom nil)
+    ::world/init-cnt*               (atom 0)  ;; this is dev-only
     ::world/prev-rules*             (atom nil)   ;; this is dev-only
     ::assets/db*                    (atom {})
     ::texts/font-instances*         (atom {})
@@ -71,13 +73,13 @@
         all-init    (sp/select [sp/ALL ::world/init-fn some?] all-systems)
         reload-fns  (sp/select [sp/ALL ::world/reload-fn some?] all-systems)
         render-fns  (sp/select [sp/ALL ::world/render-fn some?] all-systems)]
+    (swap! (::world/init-cnt* game) inc)
     (reset! (::render-fns* game) render-fns)
     (swap! (::world/atom* game)
            (fn [world]
              (-> (world/init-world game world all-rules reload-fns)
                  (as-> w (reduce (fn [w init-fn] (init-fn game w)) w all-init))
                  (window/set-window game-width game-height)
-                 (chapter1/init first-init?)
                  (o/fire-rules))))
     (compile-all game first-init?)))
 
@@ -129,10 +131,11 @@
          :cljs (catch js/Error err (log-once game err "[tick-error] ")))))
   game)
 
-(comment
-  (let [hmm-fn #(def hmm %)]
-    (add-tap hmm-fn)
-    (remove-tap hmm-fn))
+(defonce hmminator
+  (let [hmm-fn #(do (println "hmm") (def hmm %))]
+    (add-tap hmm-fn)))
 
-  (let [db @(::assets/db* hmm)]
-    (sp/select-one [grid-move/sp->layers->props 2 3 some? ::tiled/props :unwalkable] db)))
+(comment
+
+  (o/query-all hmm ::sprites/sprite-esse)
+  (filter #(= (first %) :chara/ubim) (o/query-all hmm)))

@@ -24,7 +24,7 @@
      [:what [::global ::db* db*]]
 
      ::to-load
-     [:what [asset-id ::loaded? loaded]]})})
+     [:what [asset-id ::loaded? loaded?]]})})
 
 (defmulti process-asset (fn [_game _asset-id asset-data] (::type asset-data)))
 
@@ -33,7 +33,8 @@
   (println "asset(" asset-id ") has unhandled type (" asset-type ")"))
 
 (defn load-asset [game]
-  (doseq [{:keys [asset-id]} (o/query-all @(::world/atom* game) ::to-load)]
-    (let [asset-data (get @(::db* game) asset-id)]
-      (println "loading" (::type asset-data) "asset for" asset-id)
-      (process-asset game asset-id asset-data))))
+  (doseq [{:keys [asset-id loaded?]} (o/query-all @(::world/atom* game) ::to-load)]
+    (when (not loaded?)
+      (let [asset-data (get @(::db* game) asset-id)]
+        (println "loading" (::type asset-data) "asset for" asset-id)
+        (process-asset game asset-id asset-data)))))
