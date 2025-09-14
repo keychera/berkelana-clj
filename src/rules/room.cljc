@@ -59,8 +59,9 @@
       (s-> session
            (o/insert :chara/ubim
                      (case room-id
-                       :room/home #::grid-move{:responding-to-keyname :up   :prev-x 10 :prev-y 7 :next-x 10 :next-y 6 :move-state ::grid-move/check-world-boundaries}
-                       :room/yard #::grid-move{:responding-to-keyname :down :prev-x 2  :prev-y 3 :next-x 2  :next-y 4 :move-state ::grid-move/check-world-boundaries}))
+                       ;; define move-y as well so it also pushes box out of the way (maybe this can be calculated automatically but just note for now)
+                       :room/home #::grid-move{:facing :up   :prev-x 10 :prev-y 7 :next-x 10 :next-y 6 :move-y -1 :move-state ::grid-move/check-world-boundaries}
+                       :room/yard #::grid-move{:facing :down :prev-x 2  :prev-y 3 :next-x 2  :next-y 4 :move-y 1  :move-state ::grid-move/check-world-boundaries}))
            (o/insert ::camera/camera ::pos2d/pos2d {:x (- (:x boundary)) :y (- (:y boundary))}))]})
 
    ::world/render-fn

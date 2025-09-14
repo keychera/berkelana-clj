@@ -15,14 +15,13 @@
 (s/def ::move-duration number?)
 (s/def ::pos-x number?)
 (s/def ::pos-y number?)
-(def default {::move-duration 80 ::move-delay 0 ::move-x 0 ::move-y 0 ::responding-to-keyname :down})
+(def default {::move-duration 80 ::move-delay 0 ::move-x 0 ::move-y 0 ::facing :down})
 
 ; properties
 (s/def ::unwalkable? boolean?)
 (s/def ::pushable? boolean?)
 
 ; intermediates
-(s/def ::responding-to-keyname keyword?)
 (s/def ::prev-x number?)
 (s/def ::prev-y number?)
 (s/def ::next-x number?)
@@ -30,8 +29,11 @@
 (s/def ::move-x number?)
 (s/def ::move-y number?)
 (s/def ::move-delay number?)
-(s/def ::move-state #{::idle ::teleport ::plan-move ::check-world-boundaries ::check-unwalkable ::check-pushable ::allow-push ::allow-move ::prevent-move})
+(s/def ::move-state #{::idle ::teleport ::plan-move ::check-world-boundaries ::check-unwalkable ::check-pushable ::allow-push ::allow-move ::prevent-move ::moving})
 (s/def ::pushing any?)
+
+;; ubim-only, this is grounds for refactor
+(s/def ::facing keyword?)
 
 (def sp->layers->props (sp/path [:id/worldmap ::tiled/tiled-map :layers (sp/multi-path "Structures" "Interactables" "Terrain")]))
 (def sp->map-dimension (sp/multi-path [:id/worldmap ::tiled/tiled-map :map-width]
@@ -70,20 +72,8 @@
       :then
       (let [move-x (case keyname ::input/left -1 ::input/right 1 0)
             move-y (case keyname ::input/up   -1 ::input/down  1 0)]
-        (insert! esse-id {::responding-to-keyname keyname
+        (insert! esse-id {::facing (keyword (name keyname))
                           ::move-state ::plan-move ::move-x move-x ::move-y move-y}))]
-
-     ::idle-ubim
-     [:what
-      [keyname ::input/pressed-key ::input/keyup]
-      [esse-id ::responding-to-keyname keyname]
-      [esse-id ::move-delay move-delay]
-      :when
-      (<= move-delay 0)
-      (= esse-id :chara/ubim)
-      (#{::input/left ::input/right ::input/up ::input/down} keyname)
-      :then
-      (insert! :chara/ubim {::move-state ::idle ::move-x 0 ::move-y 0})]
 
      ::plan-move
      [:what
@@ -186,32 +176,34 @@
       :then
       (case move-plan
         ::allow-move
-        (s-> session (o/insert esse-id {::pos-x next-x ::pos-y next-y ::move-delay move-duration}))
+        (s-> session (o/insert esse-id {::move-state ::moving ::pos-x next-x ::pos-y next-y ::move-delay move-duration}))
 
-        ::prevent-move
-        (s-> session (o/insert esse-id {::next-x prev-x ::next-y prev-y ::move-x 0 ::move-y 0 ::move-delay move-duration})))]
+        ::prevent-move ;; is just moving but with position unchanged, done like this so rules.ubim animation can still animate itself
+        (s-> session (o/insert esse-id {::move-state ::moving ::next-x prev-x ::next-y prev-y ::move-delay move-duration})))]
 
      ::animate-pos
      [:what
       [::time/now ::time/delta delta-time]
+      [esse-id ::move-state ::moving]
       [esse-id ::pos-x px]
       [esse-id ::pos-y py]
       [esse-id ::prev-x sx]
       [esse-id ::prev-y sy]
       [esse-id ::move-delay move-delay {:then false}]
       [esse-id ::move-duration move-duration {:then false}]
-      :when (> move-delay 0)
       :then
-      (let [t (- 1.0 (/ move-delay move-duration))
-            ease-fn identity
-            move-delay (- move-delay delta-time)
-            x (if (> move-delay 0) (+ sx (* (- px sx) (ease-fn t))) px)
-            y (if (> move-delay 0) (+ sy (* (- py sy) (ease-fn t))) py)]
-        (s-> session
-             (o/insert esse-id
-                       {::move-delay move-delay
-                        ::pos2d/x (* grid x)
-                        ::pos2d/y (* grid y)})))]})})
+      (if (> move-delay 0)
+        (let [t (- 1.0 (/ move-delay move-duration))
+              ease-fn identity
+              move-delay (- move-delay delta-time)
+              x (if (> move-delay 0) (+ sx (* (- px sx) (ease-fn t))) px)
+              y (if (> move-delay 0) (+ sy (* (- py sy) (ease-fn t))) py)]
+          (s-> session
+               (o/insert esse-id
+                         {::move-delay move-delay
+                          ::pos2d/x (* grid x)
+                          ::pos2d/y (* grid y)})))
+        (insert! esse-id {::move-state ::idle ::move-x 0 ::move-y 0}))]})})
 
 (comment
   (-> (->> (concat (::world/rules system)
