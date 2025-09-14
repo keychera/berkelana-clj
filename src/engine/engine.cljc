@@ -38,12 +38,12 @@
    tiled/rules
    shader/rules
    ubim/rules
-   #?(:cljs leva-rules/rules)
    dev-only/rules])
 
 (def all-systems
   ;; gonna refactor everything to this
-  (concat [assets/system
+  (concat [#?(:cljs leva-rules/sysyem)
+           assets/system
            camera/system
            grid-move/system
            room/system
