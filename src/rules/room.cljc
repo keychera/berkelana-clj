@@ -54,12 +54,13 @@
       [::world/global ::world/game game]
       [::asset/global ::asset/db* db*]
       :then
+      (println "loading" room-id)
       (load-room game db* asset-id boundary)
       (s-> session
            (o/insert :chara/ubim
                      (case room-id
-                       :room/home #::grid-move{:prev-x 10 :prev-y 7 :next-x 10 :next-y 6 :move-state ::grid-move/check-world-boundaries}
-                       :room/yard #::grid-move{:prev-x 2  :prev-y 3 :next-x 2  :next-y 4 :move-state ::grid-move/check-world-boundaries}))
+                       :room/home #::grid-move{:responding-to-keyname :up   :prev-x 10 :prev-y 7 :next-x 10 :next-y 6 :move-state ::grid-move/check-world-boundaries}
+                       :room/yard #::grid-move{:responding-to-keyname :down :prev-x 2  :prev-y 3 :next-x 2  :next-y 4 :move-state ::grid-move/check-world-boundaries}))
            (o/insert ::camera/camera ::pos2d/pos2d {:x (- (:x boundary)) :y (- (:y boundary))}))]})
 
    ::world/render-fn

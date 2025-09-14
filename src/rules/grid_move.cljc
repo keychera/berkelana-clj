@@ -15,7 +15,7 @@
 (s/def ::move-duration number?)
 (s/def ::pos-x number?)
 (s/def ::pos-y number?)
-(def default {::move-duration 80 ::move-delay 0})
+(def default {::move-duration 80 ::move-delay 0 ::move-x 0 ::move-y 0 ::responding-to-keyname :down})
 
 ; properties
 (s/def ::unwalkable? boolean?)
@@ -79,11 +79,11 @@
       [esse-id ::responding-to-keyname keyname]
       [esse-id ::move-delay move-delay]
       :when
-      (= esse-id :chara/ubim)
       (<= move-delay 0)
+      (= esse-id :chara/ubim)
       (#{::input/left ::input/right ::input/up ::input/down} keyname)
       :then
-      (insert! esse-id {::move-state ::idle ::move-x 0 ::move-y 0})]
+      (insert! :chara/ubim {::move-state ::idle ::move-x 0 ::move-y 0})]
 
      ::plan-move
      [:what
