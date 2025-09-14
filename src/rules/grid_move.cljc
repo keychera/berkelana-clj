@@ -4,7 +4,7 @@
    [assets.tiled :as tiled]
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as sp]
-   [engine.macros :refer [s->]]
+   [engine.macros :refer [s-> insert!]]
    [engine.world :as world]
    [odoyle.rules :as o]
    [rules.input :as input]
@@ -22,6 +22,7 @@
 (s/def ::pushable? boolean?)
 
 ; intermediates
+(s/def ::responding-to-keyname keyword?)
 (s/def ::prev-x number?)
 (s/def ::prev-y number?)
 (s/def ::next-x number?)
@@ -29,7 +30,6 @@
 (s/def ::move-x number?)
 (s/def ::move-y number?)
 (s/def ::move-delay number?)
-
 (s/def ::move-state #{::idle ::teleport ::plan-move ::check-world-boundaries ::check-unwalkable ::check-pushable ::allow-push ::allow-move ::prevent-move})
 (s/def ::pushing any?)
 
@@ -70,8 +70,20 @@
       :then
       (let [move-x (case keyname ::input/left -1 ::input/right 1 0)
             move-y (case keyname ::input/up   -1 ::input/down  1 0)]
-        (s-> session
-             (o/insert esse-id {::move-state ::plan-move ::move-x move-x ::move-y move-y})))]
+        (insert! esse-id {::responding-to-keyname keyname
+                          ::move-state ::plan-move ::move-x move-x ::move-y move-y}))]
+
+     ::idle-ubim
+     [:what
+      [keyname ::input/pressed-key ::input/keyup]
+      [esse-id ::responding-to-keyname keyname]
+      [esse-id ::move-delay move-delay]
+      :when
+      (= esse-id :chara/ubim)
+      (<= move-delay 0)
+      (#{::input/left ::input/right ::input/up ::input/down} keyname)
+      :then
+      (insert! esse-id {::move-state ::idle ::move-x 0 ::move-y 0})]
 
      ::plan-move
      [:what
@@ -174,10 +186,10 @@
       :then
       (case move-plan
         ::allow-move
-        (s-> session (o/insert esse-id {::move-state ::idle ::pos-x next-x ::pos-y next-y ::move-delay move-duration}))
+        (s-> session (o/insert esse-id {::pos-x next-x ::pos-y next-y ::move-delay move-duration}))
 
         ::prevent-move
-        (s-> session (o/insert esse-id {::move-state ::idle ::next-x prev-x ::next-y prev-y ::move-x 0 ::move-y 0 ::move-delay move-duration})))]
+        (s-> session (o/insert esse-id {::next-x prev-x ::next-y prev-y ::move-x 0 ::move-y 0 ::move-delay move-duration})))]
 
      ::animate-pos
      [:what

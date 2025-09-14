@@ -42,10 +42,4 @@
 
     ::pressed-key
     [:what
-     [keyname ::pressed-key ::keydown]]
-
-    ::one-frame-keyup
-    [:what
-     [keyname ::pressed-key ::keyup]
-     :then
-     (s-> session (o/retract keyname ::pressed-key))]}))
+     [keyname ::pressed-key keystate]]}))
