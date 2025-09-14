@@ -128,16 +128,19 @@
                    objectgroup)
 
         firstgid->instanced-map (update-vals
-                                   firstgid->tileset
-                                   (fn [tileset]
-                                     (-> tileset
-                                         (update :entity
-                                                 (fn [entity]
-                                                   (let [instanced (c/compile game (instances/->instanced-entity entity))
-                                                         keyname   (keyword (:name tileset))]
-                                                     (swap! db* assoc-in [asset-id keyname ::instanceable/raw] entity)
-                                                     (swap! db* assoc-in [asset-id keyname ::instanceable/instanced] instanced)
-                                                     instanced))))))]
+                                 firstgid->tileset
+                                 (fn [tileset]
+                                   (-> tileset
+                                       (assoc :i 0)
+                                       ;; in js, (= 1 (inc nil)) while in jvm it will throw (currently only rules.room process this)
+                                       ;; https://github.com/jank-lang/clojure-test-suite/blob/66502afe97d63d01927fd3015c9fc251c4cfd7b1/test/clojure/core_test/inc.cljc#L32
+                                       (update :entity
+                                               (fn [entity]
+                                                 (let [instanced (c/compile game (instances/->instanced-entity entity))
+                                                       keyname   (keyword (:name tileset))]
+                                                   (swap! db* assoc-in [asset-id keyname ::instanceable/raw] entity)
+                                                   (swap! db* assoc-in [asset-id keyname ::instanceable/instanced] instanced)
+                                                   instanced))))))]
     ;; NOTE this ns now doesnt do any rendering
     ;; this ns provide ::tiled-map and ::instanced-map, which right now being rendered by rules.room
     ;; and ::instanceable/raw + ::instanceable/instanced, which is used by rules.sprite
@@ -145,6 +148,8 @@
     (swap! db* #(update % asset-id merge
                         {::tiled-map               (merge tiled-map (vars->map map-width map-height))
                          ::firstgid->instanced-map firstgid->instanced-map}))))
+
+
 
 (defn parse-value-type [{:keys [value type]}]
   (case type

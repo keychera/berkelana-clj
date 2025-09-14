@@ -56,17 +56,8 @@
 
 (defn on-mouse-click! [_window _button _action _mods])
 
-(defn keycode->keyword [keycode]
-  (condp = keycode
-    GLFW/GLFW_KEY_LEFT :left
-    GLFW/GLFW_KEY_RIGHT :right
-    GLFW/GLFW_KEY_UP :up
-    GLFW/GLFW_KEY_DOWN :down
-    GLFW/GLFW_KEY_SPACE ::input/space
-    nil))
-
 (defn on-key! [_window keycode _scancode action _mods]
-  (when-let [keyname (keycode->keyword keycode)]
+  (when-let [keyname (input/glfw-keycode->keyname keycode)]
     (condp = action
       GLFW/GLFW_PRESS (swap! world-queue conj (fn on-press [w] (o/insert w keyname ::input/pressed-key ::input/keydown)))
       GLFW/GLFW_RELEASE (swap! world-queue conj (fn on-release [w] (o/insert w keyname ::input/pressed-key ::input/keyup)))
