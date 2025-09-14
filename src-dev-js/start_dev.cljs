@@ -16,64 +16,49 @@
 
 (st/instrument)
 
-(defonce !panel-atom
-  (r/atom
-   {:rotation {:value 0 :min 0 :max (* 2 (.-PI js/Math))}
-    :scale    {:value 1 :min 0 :max (* 2 (.-PI js/Math))}}))
+(defonce fps-counter*
+  (r/atom {:last-time (js/performance.now) :frames 0 :fps 0}))
 
-(defmulti on-leva-change (fn [k _old _new] k))
+(defn ^:vibe update-fps! []
+  (let [now (js/performance.now)
+        {:keys [last-time frames]} @fps-counter*
+        delta (- now last-time)]
+    (if (> delta 1000) ;; 1 second has passed
+      (swap! fps-counter* assoc :last-time now :frames 0 :fps frames)
+      (swap! fps-counter* update :frames inc))))
 
-(defmethod on-leva-change :rotation [_ _ new']
-  (swap! start/world-queue conj (fn leva-rotation [w] (o/insert w ::leva-rules/leva-spritesheet ::leva-rules/rotation new'))))
+(defonce dev-atom*
+  (r/atom {:dev-value  "raw value"
+           :dev-slider {:value 0 :min 0 :max 64}}))
 
-(defmethod on-leva-change :scale [_ _ new']
-  (swap! start/world-queue conj (fn leva-scale [w] (o/insert w ::leva-rules/leva-spritesheet ::leva-rules/scale new'))))
+(defmulti on-dev-change (fn [k _old _new] k))
 
-(defmethod on-leva-change :default [_k _old' _new']
+(defmethod on-dev-change :dev-slider [_ _ new']
+  (swap! start/world-queue conj (fn dev-slider [w] (o/insert w ::leva-rules/dev ::leva-rules/dev-slider new'))))
+
+(defmethod on-dev-change :default [_k _old' _new']
   #_(println k old' new'))
 
 (defn panel-watcher [_ _ old' new']
   (let [[removed added _common] (data/diff old' new')]
     (doseq [k (set/union (set (keys removed)) (set (keys added)))]
-      (on-leva-change k (get old' k) (get new' k)))))
+      (on-dev-change k (get old' k) (get new' k)))))
 
-(add-watch !panel-atom :panel-watcher #'panel-watcher)
-
-(defonce !fps-counter
-  (r/atom {:last-time (js/performance.now) :frames 0 :fps 0}))
-
-(defn ^:vibe update-fps! []
-  (let [now (js/performance.now)
-        {:keys [last-time frames]} @!fps-counter
-        delta (- now last-time)]
-    (if (> delta 1000) ;; 1 second has passed
-      (swap! !fps-counter assoc :last-time now :frames 0 :fps frames)
-      (swap! !fps-counter update :frames inc))))
-
-(defonce dev-atom*
-  (r/atom {:dev-value "raw value"
-           :upper     {:a 1 :b 2 :c 3}
-           :center    {:a 1 :b 2 :c 3}
-           :lower     {:a 1 :b 2 :c 3}}))
+(add-watch dev-atom* :panel-watcher #'panel-watcher)
 
 (defn main-panel []
   [:<>
    [leva/Controls
     {:folder {:name "FPS"}
-     :atom   !fps-counter
-     :schema {"fps graph" (leva/monitor (fn [] (:fps @!fps-counter)) {:graph true :interval 200})
+     :atom   fps-counter*
+     :schema {"fps graph" (leva/monitor (fn [] (:fps @fps-counter*)) {:graph true :interval 200})
               :fps        {:order 1}
               :last-time  {:render (constantly false)}}}]
    [leva/Controls
     {:folder {:name "Dev"}
      :atom   dev-atom*
-     :schema {:dev-value {:order 0}
-              :upper     {:order 1}
-              :center    {:order 2}
-              :lower     {:order 3}}}]
-   [leva/Controls
-    {:folder {:name "State"}
-     :atom   !panel-atom}]])
+     :schema {:dev-value  {:order 0}
+              :dev-slider {:order 1}}}]])
 
 (defonce root (delay (rdomc/create-root (.getElementById js/document "app"))))
 
@@ -91,9 +76,8 @@
     (when @!hud-visible
       (dom/remove (dom/by-id hud/hud-id))
       (reset! !hud-visible false)))
-  (if-let [dev-value (first (o/query-all @(::world/atom* game) ::dev-only/dev-value))]
-    (swap! dev-atom* assoc :dev-value (:value dev-value))
-    (swap! dev-atom* assoc :dev-value 0)))
+  (when-let [dev-value (first (o/query-all @(::world/atom* game) ::dev-only/dev-value))]
+    (swap! dev-atom* assoc :dev-value (:value dev-value))))
 
 (defn dev-loop [game]
   (update-fps!)

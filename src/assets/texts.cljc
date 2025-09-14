@@ -9,7 +9,8 @@
    [play-cljc.gl.core :as c]
    [play-cljc.gl.text :as gl-text]
    [play-cljc.instances :as i]
-   [play-cljc.transforms :as t]))
+   [play-cljc.transforms :as t]
+   [rules.dev.dev-only :as dev-only]))
 
 ;; from example play-cljc-examples/ui-gallery/src/ui_gallery
 
@@ -32,25 +33,28 @@
 
    ::world/render-fn
    (fn text-render [game world camera game-width game-height]
-     (let [x 32 y 128
-           {:keys [texts cnt]} (first (o/query-all world ::counter))
-           {:keys [font-entity dynamic-entity]} @(::font-instances* game)]
-       (when (and font-entity dynamic-entity texts)
-         (let [text (subvec texts 0 (mod cnt (inc (count texts))))]
-           (c/render game (-> (reduce
-                               (partial apply chars/assoc-char)
-                               dynamic-entity
-                               (for [line-num (range (count text))
-                                     char-num (range (count (nth text line-num)))
-                                     :let [ch (get-in text [line-num char-num])]]
-                                 [line-num char-num
-                                  (-> font-entity
-                                      (chars/crop-char ch)
-                                      (t/color [1 1 1 1]))]))
-                              (t/project game-width game-height)
-                              (t/invert camera)
-                              (t/translate (+ x 8) (- y 26))
-                              (t/scale 0.2 0.2)))))))})
+
+     (doseq [[x y] [[32 128] [24 100] [42 80]]]
+       (let [limit 8
+             {:keys [texts cnt]} (first (o/query-all world ::counter))
+             {:keys [font-entity dynamic-entity]} @(::font-instances* game)]
+         (when (and font-entity dynamic-entity texts)
+           (let [text (subvec texts 0 (mod cnt (inc (count texts))))]
+             (swap! (::world/atom* game) #(dev-only/send-dev-value % (str text)))
+             (c/render game (-> (reduce
+                                 (partial apply chars/assoc-char)
+                                 dynamic-entity
+                                 (for [line-num (range (count text))
+                                       char-num (range (min limit (count (nth text line-num))))
+                                       :let [ch (get-in text [line-num char-num])]]
+                                   [line-num char-num
+                                    (-> font-entity
+                                        (chars/crop-char ch)
+                                        (t/color [1 1 1 1]))]))
+                                (t/project game-width game-height)
+                                (t/invert camera)
+                                (t/translate (+ x 8) (- y 26))
+                                (t/scale 0.2 0.2))))))))})
 
 (defn init [game]
   (#?(:clj load-font-clj :cljs load-font-cljs)

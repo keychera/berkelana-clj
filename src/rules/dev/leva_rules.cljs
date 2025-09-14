@@ -5,13 +5,8 @@
 
 (def rules
   (o/ruleset
-   {::leva-rotation
+   {::leva-slider
     [:what
-     [::leva-spritesheet ::rotation rotation]]
+     [::dev ::dev-slider value]]}))
 
-    ::leva-scale
-    [:what
-     [::leva-spritesheet ::scale scale]]}))
-
-(s/def ::rotation number?)
-(s/def ::scale number?)
+(s/def ::dev-slider number?)
