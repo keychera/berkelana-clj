@@ -29,9 +29,8 @@
 (s/def ::move-x number?)
 (s/def ::move-y number?)
 (s/def ::move-delay number?)
-(s/def ::teleport boolean?)
 
-(s/def ::move-plan #{::idle ::plan-move ::check-world-boundaries ::check-unwalkable ::check-pushable ::allow-push ::allow-move ::prevent-move})
+(s/def ::move-state #{::idle ::teleport ::plan-move ::check-world-boundaries ::check-unwalkable ::check-pushable ::allow-push ::allow-move ::prevent-move})
 (s/def ::pushing any?)
 
 (def sp->layers->props (sp/path [:id/worldmap ::tiled/tiled-map :layers (sp/multi-path "Structures" "Interactables" "Terrain")]))
@@ -47,22 +46,15 @@
       [esse-id ::pos-x _ {:then false}] ;; assuming having this fact means esse is using grid-move
       [:id/worldmap ::asset/loaded? true]
       :then
-      (s-> session (o/insert esse-id ::teleport true))]
+      (s-> session (o/insert esse-id ::move-state ::teleport))]
 
      ::teleport
      [:what
       [esse-id ::pos-x pos-x {:then false}]
       [esse-id ::pos-y pos-y {:then false}]
-      [esse-id ::teleport true]
-      ;; at this point, I finally understood that boolean in rules engine world...
-      ;; ...is not like a flag where true here would make the rules fire every frame
-      ;; rules engine does not care if it's true, it only care that new fact containing true is inserted
-      ;; if there is no new fact inserted that this rules "see" then the rule won't fire
-      ;; so if the rules is [esse-id ::teleport false], and then we (o/insert world esse-id ::teleport false)
-      ;; the rule will behave the same way.
-      ;; I am making this note to mark my understanding
+      [esse-id ::move-state ::teleport]
       :then
-      (s-> session (o/insert esse-id {::move-plan ::idle ::pos2d/x (* grid pos-x) ::pos2d/y (* grid pos-y)}))]
+      (s-> session (o/insert esse-id {::move-state ::idle ::pos2d/x (* grid pos-x) ::pos2d/y (* grid pos-y)}))]
 
      ::move-ubim
      [:what
@@ -79,11 +71,11 @@
       (let [move-x (case keyname ::input/left -1 ::input/right 1 0)
             move-y (case keyname ::input/up   -1 ::input/down  1 0)]
         (s-> session
-             (o/insert esse-id {::move-plan ::plan-move ::move-x move-x ::move-y move-y})))]
+             (o/insert esse-id {::move-state ::plan-move ::move-x move-x ::move-y move-y})))]
 
      ::plan-move
      [:what
-      [esse-id ::move-plan ::plan-move]
+      [esse-id ::move-state ::plan-move]
       [esse-id ::move-x move-x]
       [esse-id ::move-y move-y]
       [esse-id ::pos-x pos-x {:then false}]
@@ -91,11 +83,11 @@
       :when
       (or (not= 0 move-x) (not= 0 move-y))
       :then
-      (s-> session (o/insert esse-id {::prev-x pos-x ::prev-y pos-y ::next-x (+ pos-x move-x) ::next-y (+ pos-y move-y) ::move-plan ::check-world-boundaries}))]
+      (s-> session (o/insert esse-id {::prev-x pos-x ::prev-y pos-y ::next-x (+ pos-x move-x) ::next-y (+ pos-y move-y) ::move-state ::check-world-boundaries}))]
 
      ::check-world-boundaries
      [:what
-      [esse-id ::move-plan ::check-world-boundaries]
+      [esse-id ::move-state ::check-world-boundaries]
       [::asset/global ::asset/db* db*]
       [esse-id ::next-x next-x {:then false}]
       [esse-id ::next-y next-y {:then false}]
@@ -106,8 +98,8 @@
                                (or (< next-x 0) (< next-y 0) (> next-x (dec map-width)) (> next-y (dec map-height)))))
             unwalkable?   (or (sp/select-any [sp->layers->props next-x next-y some? ::tiled/props :unwalkable] db) false)]
         (if (or out-of-map? unwalkable?)
-          (s-> session (o/insert esse-id {::move-plan ::prevent-move}))
-          (s-> session (o/insert esse-id {::move-plan ::check-unwalkable}))))]
+          (s-> session (o/insert esse-id {::move-state ::prevent-move}))
+          (s-> session (o/insert esse-id {::move-state ::check-unwalkable}))))]
 
      ::unwalkable-esse
      [:what
@@ -117,7 +109,7 @@
 
      ::check-unwalkable
      [:what
-      [esse-id ::move-plan ::check-unwalkable]
+      [esse-id ::move-state ::check-unwalkable]
       [esse-id ::next-x next-x {:then false}]
       [esse-id ::next-y next-y {:then false}]
       :then
@@ -126,8 +118,8 @@
                      (filter #(and (= next-x (:unwalkable-x %)) (= next-y (:unwalkable-y %))))
                      (map :unwalkable-id))]
         (if (seq unwalkable-esses)
-          (s-> session (o/insert esse-id {::move-plan ::prevent-move}))
-          (s-> session (o/insert esse-id {::move-plan ::check-pushable}))))]
+          (s-> session (o/insert esse-id {::move-state ::prevent-move}))
+          (s-> session (o/insert esse-id {::move-state ::check-pushable}))))]
 
      ::pushable-esse
      [:what
@@ -137,7 +129,7 @@
 
      ::check-pushable
      [:what
-      [esse-id ::move-plan ::check-pushable]
+      [esse-id ::move-state ::check-pushable]
       [esse-id ::next-x next-x {:then false}]
       [esse-id ::next-y next-y {:then false}]
       [esse-id ::move-x move-x {:then false}]
@@ -152,27 +144,27 @@
                 (fn [session' pushable-id]
                   (-> session'
                       (o/insert esse-id {::pushing pushable-id})
-                      (o/insert pushable-id {::move-plan ::plan-move ::move-x move-x ::move-y move-y})))
+                      (o/insert pushable-id {::move-state ::plan-move ::move-x move-x ::move-y move-y})))
                 session
                 pushable-esses))
-          (s-> session (o/insert esse-id {::move-plan ::allow-move}))))]
+          (s-> session (o/insert esse-id {::move-state ::allow-move}))))]
 
      ::allow-push
      [:what
       [esse-id ::pushing pushable-id]
-      [pushable-id ::move-plan pushable-move-plan]
+      [pushable-id ::move-state pushable-move-plan]
       :when (#{::allow-move ::prevent-move} pushable-move-plan)
       :then
       (case pushable-move-plan
         ::allow-move
-        (s-> session (o/insert esse-id {::move-plan ::allow-move ::pushing nil}))
+        (s-> session (o/insert esse-id {::move-state ::allow-move ::pushing nil}))
 
         ::prevent-move
-        (s-> session (o/insert esse-id {::move-plan ::prevent-move ::pushing nil})))]
+        (s-> session (o/insert esse-id {::move-state ::prevent-move ::pushing nil})))]
 
      ::allow-move
      [:what
-      [esse-id ::move-plan move-plan]
+      [esse-id ::move-state move-plan]
       [esse-id ::prev-x prev-x]
       [esse-id ::prev-y prev-y]
       [esse-id ::next-x next-x {:then false}]
@@ -182,10 +174,10 @@
       :then
       (case move-plan
         ::allow-move
-        (s-> session (o/insert esse-id {::move-plan ::idle ::pos-x next-x ::pos-y next-y ::move-delay move-duration}))
+        (s-> session (o/insert esse-id {::move-state ::idle ::pos-x next-x ::pos-y next-y ::move-delay move-duration}))
 
         ::prevent-move
-        (s-> session (o/insert esse-id {::move-plan ::idle ::next-x prev-x ::next-y prev-y ::move-x 0 ::move-y 0 ::move-delay move-duration})))]
+        (s-> session (o/insert esse-id {::move-state ::idle ::next-x prev-x ::next-y prev-y ::move-x 0 ::move-y 0 ::move-delay move-duration})))]
 
      ::animate-pos
      [:what
@@ -222,8 +214,8 @@
       (o/insert "bucket" (merge default {::pos-x 2 ::pos-y 3 ::pushable? true}))
       (o/insert "ubim"   (merge default {::pos-x 2 ::pos-y 2}))
       (o/fire-rules)
-      (o/insert "ubim"   {::move-plan ::plan-move ::move-x 0 ::move-y 1})
+      (o/insert "ubim"   {::move-state ::plan-move ::move-x 0 ::move-y 1})
       (o/fire-rules)
-      (o/insert "ubim"   {::move-plan ::plan-move ::move-x 0 ::move-y 1})
+      (o/insert "ubim"   {::move-state ::plan-move ::move-x 0 ::move-y 1})
       (o/fire-rules)
       (o/query-all ::current-pos)))

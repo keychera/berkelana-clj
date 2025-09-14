@@ -43,11 +43,7 @@
            (o/insert ::world/global ::active
                      (case room-id
                        :room/home :room/yard
-                       :room/yard :room/home))
-           (o/insert :chara/ubim 
-                     (case room-id
-                       :room/home  #::grid-move{:teleport true :pos-x 2 :pos-y 4}
-                       :room/yard  #::grid-move{:teleport true :pos-x 10 :pos-y 4}) ))]
+                       :room/yard :room/home)))]
 
      ::active-room
      [:what
@@ -60,6 +56,10 @@
       :then
       (load-room game db* asset-id boundary)
       (s-> session
+           (o/insert :chara/ubim
+                     (case room-id
+                       :room/home #::grid-move{:prev-x 10 :prev-y 7 :next-x 10 :next-y 6 :move-state ::grid-move/check-world-boundaries}
+                       :room/yard #::grid-move{:prev-x 2  :prev-y 3 :next-x 2  :next-y 4 :move-state ::grid-move/check-world-boundaries}))
            (o/insert ::camera/camera ::pos2d/pos2d {:x (- (:x boundary)) :y (- (:y boundary))}))]})
 
    ::world/render-fn
