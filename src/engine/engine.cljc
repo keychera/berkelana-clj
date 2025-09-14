@@ -45,11 +45,11 @@
   ;; gonna refactor everything to this
   (concat [assets/system
            camera/system
-           dialogues/system
-           texts/system
-           sprites/system
            grid-move/system
-           room/system]
+           room/system
+           sprites/system
+           dialogues/system
+           texts/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
 (defn ->game [context]
@@ -124,8 +124,7 @@
                              (update :viewport assoc :width game-width :height game-height)))
           (shader/render-shader-esses game world game-width game-height)
           (doseq [render-fn @(::render-fns* game)]
-            (render-fn game world camera game-width game-height))
-          (sprites/render game world camera game-width game-height)))
+            (render-fn game world camera game-width game-height))))
       #?(:clj  (catch Exception err (throw err))
          :cljs (catch js/Error err (log-once game err "[tick-error] ")))))
   game)
