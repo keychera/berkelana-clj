@@ -2,6 +2,7 @@
   (:require
    [assets.assets :as asset]
    [assets.tiled :as tiled]
+   [clojure.core.match :as cm]
    [clojure.spec.alpha :as s]
    [com.rpl.specter :as sp]
    [engine.macros :refer [s->]]
@@ -12,7 +13,6 @@
    [play-cljc.transforms :as t]
    [rules.camera :as camera]
    [rules.grid-move :as grid-move]
-   [rules.input :as input]
    [rules.pos2d :as pos2d]))
 
 (s/def ::active keyword?)
@@ -25,7 +25,7 @@
   {::world/init-fn
    (fn test-room [_ world]
      (-> world
-         (o/insert ::world/global ::active :room/home) 
+         (o/insert ::world/global ::active :room/home)
          (o/insert :room/yard {::boundary {:x 0 :y 0 :width 8 :height 8}
                                ::use      :id/worldmap})
          (o/insert :room/home {::boundary {:x 8 :y 0 :width 8 :height 8}
@@ -35,15 +35,23 @@
    (o/ruleset
     {::test-cycle-room
      [:what
-      [::input/r ::input/pressed-key ::input/keydown]
       [::world/global ::active room-id {:then false}]
       [room-id ::boundary boundary {:then false}]
+      [esse-id ::grid-move/move-state ::grid-move/idle]
+      [esse-id ::grid-move/pos-x pos-x {:then false}]
+      [esse-id ::grid-move/pos-y pos-y {:then false}]
+      :when (= esse-id :chara/ubim)
       :then
-      (s-> session
-           (o/insert ::world/global ::active
-                     (case room-id
-                       :room/home :room/yard
-                       :room/yard :room/home)))]
+      (cm/match [room-id pos-x pos-y]
+        [:room/home 10 6] (s-> session
+                               (o/insert ::world/global ::active :room/yard)
+                               (o/insert esse-id #::grid-move{:facing :down :prev-x 2  :prev-y 3 :next-x 2 :next-y 4 :move-y 1
+                                                              :move-state ::grid-move/check-world-boundaries}))
+        [:room/yard 2  3] (s-> session
+                               (o/insert ::world/global ::active :room/home)
+                               (o/insert esse-id #::grid-move{:facing :up :prev-x 10 :prev-y 6 :next-x 10 :next-y 5 :move-y -1
+                                                              :move-state ::grid-move/check-world-boundaries}))
+        :else :no-op)]
 
      ::active-room
      [:what
@@ -54,14 +62,8 @@
       [::world/global ::world/game game]
       [::asset/global ::asset/db* db*]
       :then
-      (println "loading" room-id)
       (load-room game db* asset-id boundary)
-      (s-> session
-           (o/insert :chara/ubim
-                     (case room-id
-                       ;; define move-y as well so it also pushes box out of the way (maybe this can be calculated automatically but just note for now)
-                       :room/home #::grid-move{:facing :up   :prev-x 10 :prev-y 7 :next-x 10 :next-y 6 :move-y -1 :move-state ::grid-move/check-world-boundaries}
-                       :room/yard #::grid-move{:facing :down :prev-x 2  :prev-y 3 :next-x 2  :next-y 4 :move-y 1  :move-state ::grid-move/check-world-boundaries}))
+      (s-> session 
            (o/insert ::camera/camera ::pos2d/pos2d {:x (- (:x boundary)) :y (- (:y boundary))}))]})
 
    ::world/render-fn
