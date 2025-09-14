@@ -100,7 +100,7 @@
                    (t/crop crop-x (+ crop-y frame-w (- inset)) inset inset))]
     [center left l+u up u+r right r+d down d+l]))
 
-(defn render [game world camera game-width game-height]
+(defn render [world game camera game-width game-height]
   (when (some? (::raw @(::dialogue-instances* game)))
     (let [;; require frame to be square 
           x 32 y 128
@@ -114,7 +114,7 @@
 
 (world/system system
   {::world/init-fn
-   (fn [_game world]
+   (fn [world _game]
      (-> world
          (o/insert ::this ::delay-ms 0)
          (o/insert ::texts/test ::texts/counter 0)

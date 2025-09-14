@@ -12,7 +12,7 @@
 
 (world/system system
   {::world/init-fn
-   (fn [_game world]
+   (fn [world _game]
      (o/insert world ::camera ::pos2d/pos2d {:x -8 :y 0}))
    
    ::world/rules

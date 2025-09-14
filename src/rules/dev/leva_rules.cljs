@@ -6,7 +6,7 @@
 
 (world/system sysyem
   {::world/init-fn
-   (fn [_game world]
+   (fn [world _game]
      (o/insert world ::dev ::dev-slider 0))
 
    ::world/rules
@@ -14,5 +14,8 @@
     {::dev-slider
      [:what
       [::dev ::dev-slider value]]})})
+
+(defn get-slider-value [world]
+  (some-> (first (o/query-all world ::dev-slider)) :value))
 
 (s/def ::dev-slider number?)

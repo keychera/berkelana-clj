@@ -77,8 +77,8 @@
     (reset! (::render-fns* game) render-fns)
     (swap! (::world/atom* game)
            (fn [world]
-             (-> (world/init-world game world all-rules reload-fns)
-                 (as-> w (reduce (fn [w init-fn] (init-fn game w)) w all-init))
+             (-> (world/init-world world game all-rules reload-fns)
+                 (as-> w (reduce (fn [w' init-fn] (init-fn w' game)) w all-init))
                  (window/set-window game-width game-height)
                  (o/fire-rules))))
     (compile-all game first-init?)))
@@ -124,9 +124,9 @@
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
                              (update :viewport assoc :width game-width :height game-height)))
-          (shader/render-shader-esses game world game-width game-height)
+          (shader/render-shader-esses world game game-width game-height)
           (doseq [render-fn @(::render-fns* game)]
-            (render-fn game world camera game-width game-height))))
+            (render-fn world game camera game-width game-height))))
       #?(:clj  (catch Exception err (throw err))
          :cljs (catch js/Error err (log-once game err "[tick-error] ")))))
   game)

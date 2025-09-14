@@ -2,6 +2,7 @@
   (:require
    #?(:clj [assets.on-compile.fonts :as fonts :refer [load-font-clj]]
       :cljs [assets.on-compile.fonts :as fonts :refer-macros [load-font-cljs]])
+   #?(:cljs [rules.dev.leva-rules :as leva-rules])
    [assets.chars :as chars]
    [clojure.spec.alpha :as s]
    [engine.world :as world]
@@ -10,8 +11,7 @@
    [play-cljc.gl.text :as gl-text]
    [play-cljc.instances :as i]
    [play-cljc.transforms :as t]
-   [rules.dev.dev-only :as dev-only]
-   [rules.dev.leva-rules :as leva-rules]))
+   [rules.dev.dev-only :as dev-only]))
 
 ;; from example play-cljc-examples/ui-gallery/src/ui_gallery
 
@@ -22,7 +22,7 @@
 
 (world/system system
   {::world/init-fn
-   (fn [_game world]
+   (fn [world _game]
      (o/insert world ::test ::counter 0))
 
    ::world/rules
@@ -33,10 +33,9 @@
       [::test ::counter cnt]]})
 
    ::world/render-fn
-   (fn text-render [game world camera game-width game-height]
-
+   (fn text-render [world game camera game-width game-height]
      (doseq [[x y] [[32 128] [24 100] [42 80]]]
-       (let [limit #?(:clj 64 :cljs (some-> (first (o/query-all world ::leva-rules/dev-slider)) :value))
+       (let [limit #?(:clj 64 :cljs (leva-rules/get-slider-value world))
              {:keys [texts cnt]} (first (o/query-all world ::counter))
              {:keys [font-entity dynamic-entity]} @(::font-instances* game)]
          (when (and font-entity dynamic-entity texts)

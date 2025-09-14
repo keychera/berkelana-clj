@@ -26,7 +26,7 @@
       [asset-id ::asset/loaded? true]]})
 
    ::world/render-fn
-   (fn render [game world camera game-width game-height]
+   (fn render [world game camera game-width game-height]
      (let [db @(:db* (first (o/query-all world ::asset/db*)))
            asset-id->esses (->> (o/query-all world ::sprite-esse)
                                 (group-by :asset-id)

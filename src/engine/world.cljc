@@ -9,9 +9,9 @@
 
 ;; game system
 (s/def ::game map?)
-(s/def ::init-fn   fn? #_(fn [game world] world))
-(s/def ::reload-fn fn? #_(fn [game world] world))
-(s/def ::render-fn fn? #_(fn [game world camera game-width game-height] world))
+(s/def ::init-fn   fn? #_(fn [world game] world))
+(s/def ::reload-fn fn? #_(fn [world game] world))
+(s/def ::render-fn fn? #_(fn [world game camera game-width game-height] world))
 
 (s/def ::rule #(instance? odoyle.rules.Rule %))
 (expound/defmsg ::rule  "rules must be odoyle.rules/ruleset\n  e.g. (o/ruleset {...})")
@@ -56,12 +56,12 @@
 (defn first-init? [game]
   (= 1 @(::init-cnt* game)))
 
-(defn init-world [game world all-rules reload-fns]
+(defn init-world [world game all-rules reload-fns]
   (let [prev-rules* (::prev-rules* game)
         session     (if (first-init? game)
                       (o/->session)
                       (let [world
-                            (reduce (fn [world reload-fn] (reload-fn game world)) world reload-fns)]
+                            (reduce (fn [world reload-fn] (reload-fn world game)) world reload-fns)]
                         (->> @prev-rules* ;; dev-only : refresh rules without resetting facts
                              (map :name)
                              (reduce o/remove-rule world))))]

@@ -47,7 +47,7 @@
 
 (world/system system
   {::world/init-fn
-   (fn [game world]
+   (fn [world game]
      (tap> world)
      (-> world
          (cond->

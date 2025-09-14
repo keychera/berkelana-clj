@@ -105,7 +105,7 @@
            (swap! (::world/atom* game) #(-> % (o/retract esse-id ::loading?)))
            (throw err)))))
 
-(defn render-shader-esses [game world game-width game-height]
+(defn render-shader-esses [world game game-width game-height]
   (let [shader-esses (o/query-all world ::shader-esse)]
     (doseq [esse shader-esses]
       (let [{:keys [x y compiled-shader]} esse]

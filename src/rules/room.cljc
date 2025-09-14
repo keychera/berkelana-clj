@@ -58,7 +58,7 @@
            (o/insert ::camera/camera ::pos2d/pos2d {:x (- (:x boundary)) :y (- (:y boundary))}))]})
 
    ::world/render-fn
-   (fn [game _world camera game-width game-height]
+   (fn [_world game camera game-width game-height]
      (let [{:keys [::instanced]} (get @(::asset/db* game) :id/worldmap)
            tile-size (-> instanced first :instanced-map :tile-size)]
        (doseq [entity (->> instanced (sort-by :firstgid) (map :instanced-map) (map :entity))]

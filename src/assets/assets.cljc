@@ -15,7 +15,7 @@
 
 (world/system system
   {::world/init-fn
-   (fn [game world]
+   (fn [world game]
      (o/insert world ::global ::db* (::db* game)))
 
    ::world/rules
