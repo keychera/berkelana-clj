@@ -34,8 +34,8 @@ todo:
             ✔ n-patch dialogue box @done(25-09-03 07:14)
             ✔ triggerrable @done(25-09-03 07:14)
             ✔ script @done(25-09-03 07:14)
-            ☐ typing text
-            ☐ positions
+            ✔ typing text @done(25-09-15 20:59)
+            ✔ positions @done(25-09-15 20:59)
             ☐ timeline
         
 
@@ -51,11 +51,11 @@ todo:
         ☐ switches
         ✔ pushable @done(25-09-06 09:24)
         ☐ talkable
-        ☐ move to another room
+        ✔ move to another room @done(25-09-15 20:59)
 
     ☐ tiled maps, advanced
-        ☐ multiple areas in one .tmx
-        ☐ map transition
+        ✔ multiple areas in one .tmx @done(25-09-15 20:59)
+        ✔ map transition @done(25-09-15 20:59)
         ☐ canopy (things that will cover the player), seems to be not trivial
         ☐ animated tiles
         ☐ bushes effect (some patch of bushes in front of player, particles)
@@ -99,13 +99,17 @@ todo:
 dont solve future problems:
     ☐ room defined in program should match the boundaries set from tiled editor. dont programmatically solve this.
 
+idiosyncracies:
+    ☐ the x y definition is not consistent, sometimes it is x y, sometimes it is pos2d, sometimes it is absolute pixel size, sometimes it is grid coordinates
+
 bugs:
     ☐ multiple input keys at once (movement arrow up and left for example)
-    ☐ tiles sometimes rendered in wrong order
-    ☐ still not sure what happen if a layer is using more than one tileset
+    ☐ if you hold move keys while entering doors, it will have delay until the players moves rooom
+    ✔ tiles sometimes rendered in wrong order @done(25-09-15 20:54) I think this is largely solved by render-fn ordering from all-systems
+    ✔ still not sure what happen if a layer is using more than one tileset @done(25-09-15 20:55) no problem with this for now, maybe until we need canopy layers
     ☐ sometimes inputs are not responsive the first seconds interacting with the game
     ☐ the animation sometimes "slides", still feel jaggy at times
-    ☐ rendering order in jvm is different
+    ✔ rendering order in jvm is different @done(25-09-15 20:56) I think this is also solved by render-fn
     ✘ instances/assoc (seemingly) blows up js call stack when nulls are passed. need triage @cancelled(25-09-06 10:17)
         ✘ I think not instance, it seems inserting value with invalid spec blows up js stack @cancelled(25-09-06 10:17)
             ✔ is my log-once fn that blows up the stack, it tries to print game map full of atom (I think that's what caused it) @done(25-09-06 10:18)
@@ -138,7 +142,7 @@ devs:
     ☐ explore graalvm...👀?
     ✔ moves cljs dev to src-dev-js @done(25-09-13 10:43)
 
-    ☐ error loses its track most of the time but somehow if we 1. hot-reload the error origin 2. not catch them 3. browser will get the stack trace
+    ☐ error loses its stack trace most of the time but somehow if we 1. hot-reload the error origin 2. not catch them 3. browser will get the stack trace
     
 
 
@@ -151,3 +155,4 @@ upstream:
         ☐ check cljs <-> clj diff https://github.com/jank-lang/clojure-test-suite/blob/bb437118c9713a7a3d5a7f250fdf309b84b388e0/test/clojure/core_test/str.cljc
         ☐ check iglu impl on :number https://github.com/oakes/iglu/blob/68e48f8fd2ac6590b6b43fb071a67c8de8c663ce/src/iglu/glsl.cljc#L109
     ☐ tiled-soup for newer version of tiled
+    ☐ more performant chars/assoc-char for play-cljc-example (1d7afacbb7754fe16c1f59daae57973bd4631681), still has a bit that can be improved
