@@ -114,6 +114,7 @@ bugs:
         ✘ I think not instance, it seems inserting value with invalid spec blows up js stack @cancelled(25-09-06 10:17)
             ✔ is my log-once fn that blows up the stack, it tries to print game map full of atom (I think that's what caused it) @done(25-09-06 10:18)
     ☐ retraction is more expensive on jvm than on js (see 6ecedbae90d7ab0568f06ff9990a2c06d6a59243)
+        ☐ it seems fine in this commit (rules/interface/director.cljc)
     ☐ leaky pixel on object from tiledmap (tiledmap not relevant i think)
     ✔ code still actually does not know when ubim is :idle @done(25-09-14 13:28) or maybe it does know
         ☐ plus jvm and js difference on room loading
