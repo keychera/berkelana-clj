@@ -18,33 +18,24 @@
 (s/def ::font-instances* #(instance? #?(:clj clojure.lang.Atom :cljs Atom) %))
 
 (s/def ::lines (s/coll-of string? :kind vector?))
-(s/def ::to-render
-  (s/keys :req-un [::lines ::pos2d/x ::pos2d/y]))
 
 (world/system system
   {::world/rules
    (o/ruleset
     {::texts-to-render
      [:what
-      [text-id ::to-render to-render]]})
+      [text-id ::lines lines]
+      [text-id ::pos2d/pos2d pos]]})
 
    ::world/render-fn
    (fn text-render [world game camera game-width game-height]
-     (let [{:keys [font-entity dynamic-entity]} @(::font-instances* game)]
-       (when (and font-entity dynamic-entity)
+     (let [{:keys [dynamic-entity font-entity]} @(::font-instances* game)]
+       (when (and dynamic-entity font-entity)
          (doseq [text (o/query-all world ::texts-to-render)]
-           (let [{:keys [lines x y]} (:to-render text)]
+           (let [{:keys [lines pos]} text
+                 {:keys [x y]} pos]
              (dev-only/inspect-game! game "che2ck" x y)
-             (c/render game (-> (reduce
-                                 (partial apply chars/assoc-char)
-                                 dynamic-entity
-                                 (for [line-num (range (count lines))
-                                       char-num (range (count (nth lines line-num)))
-                                       :let [ch (get-in lines [line-num char-num])]]
-                                   [line-num char-num
-                                    (-> font-entity
-                                        (chars/crop-char ch)
-                                        (t/color [1 1 1 1]))]))
+             (c/render game (-> (chars/instance-assoc-lines dynamic-entity font-entity lines)
                                 (t/project game-width game-height)
                                 (t/invert camera)
                                 (t/translate (+ x 8) (- y 26))

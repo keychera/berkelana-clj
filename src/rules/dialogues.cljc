@@ -9,9 +9,9 @@
    [play-cljc.gl.core :as c]
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
-   [rules.dev.dev-only :as dev-only]
    [rules.input :as input]
    [rules.instanceable :as instanceable]
+   [rules.pos2d :as pos2d]
    [rules.time :as time]))
 
 (def dialogue-box-frag-shader
@@ -151,11 +151,15 @@
       [::this ::delay-ms delay-ms {:then false}]
       :when (<= delay-ms 0)
       :then
-      (s-> session
-           (o/insert ::this ::delay-ms 50)
-           (cond->
-            :else (o/insert ::mew2 ::texts/to-render empty-text)
-            (not= (mod (inc counter) 3) 0) (o/insert ::mew2 ::texts/to-render text))
-           (o/insert ::mew2 ::counter (inc counter)))]})
+      (if (not= (mod (inc counter) 3) 0)
+        (s-> session
+             (o/insert ::this ::delay-ms 50)
+             (o/insert ::mew2 ::texts/lines (:lines text))
+             (o/insert ::mew2 ::pos2d/pos2d (select-keys text [:x :y])) 
+             (o/insert ::mew2 ::counter (inc counter)))
+        (s-> session
+             (o/insert ::this ::delay-ms 50)
+             (o/insert ::mew2 ::texts/lines (:lines empty-text))
+             (o/insert ::mew2 ::counter (inc counter))))]})
 
    ::world/render-fn render})
