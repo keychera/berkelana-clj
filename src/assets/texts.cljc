@@ -10,7 +10,6 @@
    [play-cljc.gl.text :as gl-text]
    [play-cljc.instances :as i]
    [play-cljc.transforms :as t]
-   [rules.dev.dev-only :as dev-only]
    [rules.pos2d :as pos2d]))
 
 ;; from example play-cljc-examples/ui-gallery/src/ui_gallery
@@ -18,27 +17,29 @@
 (s/def ::font-instances* #(instance? #?(:clj clojure.lang.Atom :cljs Atom) %))
 
 (s/def ::lines (s/coll-of string? :kind vector?))
+(s/def ::progress int?)
+(s/def ::width number?)
+(s/def ::content
+  (s/keys :req-un [::lines ::pos2d/x ::pos2d/y]
+          :opt-un [::progress ::width]))
 
 (world/system system
   {::world/rules
    (o/ruleset
     {::texts-to-render
      [:what
-      [text-id ::lines lines]
-      [text-id ::pos2d/pos2d pos]]})
+      [text-id ::content content]]})
 
    ::world/render-fn
    (fn text-render [world game camera game-width game-height]
      (let [{:keys [dynamic-entity font-entity]} @(::font-instances* game)]
        (when (and dynamic-entity font-entity)
-         (doseq [text (o/query-all world ::texts-to-render)]
-           (let [{:keys [lines pos]} text
-                 {:keys [x y]} pos]
-             (dev-only/inspect-game! game "che2ck" x y)
-             (c/render game (-> (chars/instance-assoc-lines dynamic-entity font-entity lines)
+         (doseq [text (->> (o/query-all world ::texts-to-render) (map :content))]
+           (let [{:keys [lines x y progress]} text]
+             (c/render game (-> (chars/instance-assoc-lines dynamic-entity font-entity lines progress)
                                 (t/project game-width game-height)
                                 (t/invert camera)
-                                (t/translate (+ x 8) (- y 26))
+                                (t/translate x y)
                                 (t/scale 0.2 0.2))))))))})
 
 (defn init [game]

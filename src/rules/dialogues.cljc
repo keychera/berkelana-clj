@@ -12,7 +12,8 @@
    [rules.input :as input]
    [rules.instanceable :as instanceable]
    [rules.pos2d :as pos2d]
-   [rules.time :as time]))
+   [rules.time :as time]
+   [rules.dev.dev-only :as dev-only]))
 
 (def dialogue-box-frag-shader
   {:precision "mediump float"
@@ -94,33 +95,41 @@
                    (t/crop crop-x (+ crop-y frame-w (- inset)) inset inset))]
     [center left l+u up u+r right r+d down d+l]))
 
-(defn render [world game camera game-width game-height]
+(defn render [world game camera game-width game-height] 
   (when (some? (::raw @(::dialogue-instances* game)))
-    (let [;; require frame to be square 
-          x 32 y 128
-          {:keys [counter]} (first (o/query-all world ::test-counter))
-          {::keys [raw instanced]} @(::dialogue-instances* game)
-          width 64 height 18 pos-x 2 pos-y -30
-          nine-patch (nine-patch raw camera width height (+ x pos-x) (+ y pos-y))] 
-      (when (not= (mod counter 3) 0)
+    (doseq [text (->> (o/query-all world ::texts/texts-to-render)
+                      (map :content)
+                      (filter :dialogue?))]
+      (let [{:keys [x y width]} text
+            {::keys [raw instanced]} @(::dialogue-instances* game)
+            height 18 pos-x -8 pos-y -6
+            nine-patch (nine-patch raw camera width height (+ x pos-x) (+ y pos-y))]
         (c/render game (-> (reduce-kv instances/assoc instanced nine-patch)
                            (t/project game-width game-height)))))))
 
 (def empty-text {:lines [] :x 0 :y 0})
+(def text2
+  {:lines ["I see now that the circumstances of one's birth"
+           "are irrelevant"]
+   :x 4 :y 110 :width 128
+   :dialogue? true})
+
 (def text
-  {:lines ["I see now that the circumstances of one's birth are irrelevant"
-           "It is what you do with the gift of life that determines who you are."]
-   :x 32 :y 128})
+  {:lines ["It is what you do with the gift of life that"
+           "determines who you are."]
+   :x 4 :y 110 :width 128
+   :dialogue? true})
 
 (s/def ::delay-ms number?)
-(s/def ::counter int?)
+(s/def ::progress int?)
 
 (world/system system
   {::world/init-fn
    (fn [world _game]
      (-> world
-         (o/insert ::this ::delay-ms 0)
-         (o/insert ::mew2 ::counter 0)))
+         (o/insert ::mew2 ::delay-ms 0)
+         (o/insert ::mew2 ::texts/content text)
+         (o/insert ::mew2 ::progress 0)))
 
    ::world/rules
    (o/ruleset
@@ -136,30 +145,28 @@
      ::progress-delay
      [:what
       [::time/now ::time/delta delta-time]
-      [::this ::delay-ms delay-ms {:then false}]
+      [::mew2 ::delay-ms delay-ms {:then false}]
       :when (> delay-ms 0)
-      :then (s-> session (o/insert ::this ::delay-ms (- delay-ms delta-time)))]
+      :then (s-> session (o/insert ::mew2 ::delay-ms (- delay-ms delta-time)))] 
 
-     ::test-counter
+     ::reset-progress
      [:what
-      [::mew2 ::counter counter]]
+      [::time/now ::time/delta delta-time]
+      [::input/space ::input/pressed-key ::input/keydown]
+      :then
+      (s-> session (o/insert ::mew2 ::progress 0))]
 
      ::progress-dialogue
      [:what
-      [::input/space ::input/pressed-key ::input/keydown]
-      [::mew2 ::counter counter {:then false}]
-      [::this ::delay-ms delay-ms {:then false}]
+      [::time/now ::time/delta delta-time]
+      [::mew2 ::progress progress {:then false}]
+      [::mew2 ::delay-ms delay-ms {:then false}]
       :when (<= delay-ms 0)
       :then
-      (if (not= (mod (inc counter) 3) 0)
-        (s-> session
-             (o/insert ::this ::delay-ms 50)
-             (o/insert ::mew2 ::texts/lines (:lines text))
-             (o/insert ::mew2 ::pos2d/pos2d (select-keys text [:x :y])) 
-             (o/insert ::mew2 ::counter (inc counter)))
-        (s-> session
-             (o/insert ::this ::delay-ms 50)
-             (o/insert ::mew2 ::texts/lines (:lines empty-text))
-             (o/insert ::mew2 ::counter (inc counter))))]})
+      (s-> session
+           (dev-only/inspect-session "hello" progress)
+           (o/insert ::mew2 ::delay-ms 5)
+           (o/insert ::mew2 ::texts/content (assoc text :progress progress))
+           (o/insert ::mew2 ::progress (inc progress)))]})
 
    ::world/render-fn render})
