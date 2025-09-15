@@ -12,7 +12,8 @@
    [rules.camera :as camera]
    [rules.instanceable :as instanceable]
    [rules.pos2d :as pos2d]
-   [rules.time :as time]))
+   [rules.time :as time]
+   [rules.dev.dev-only :as dev-only]))
 
 (def dialogue-box-frag-shader
   {:precision "mediump float"
@@ -106,11 +107,10 @@
         (c/render game (-> (reduce-kv instances/assoc instanced nine-patch)
                            (t/project game-width game-height)))))))
 
-(def empty-text {:lines [] :x 0 :y 0})
 (def text
   {:lines ["I see now that the circumstances of one's birth"
            "are irrelevant"]
-   :x 4 :y 110 :width 128
+   :x 4 :y 135 :width 128
    :dialogue? true})
 
 (def text2
@@ -119,19 +119,21 @@
    :x 4 :y 135 :width 128
    :dialogue? true})
 
-(nth (cycle [1 2 3]) 5)
-
 (s/def ::delay-ms number?)
 (s/def ::progress int?)
 (s/def ::visible boolean?)
-(s/def ::control #{:progress})
+
+;; control
+(s/def ::control #{::trigger})
+(s/def ::test-counter int?)
 
 (world/system system
   {::world/init-fn
    (fn [world _game]
      (-> world
          (o/insert ::this ::delay-ms 0)
-         (o/insert ::this ::visible false)))
+         (o/insert ::this ::visible false)
+         (o/insert ::this ::test-counter -1)))
 
    ::world/rules
    (o/ruleset
@@ -149,17 +151,18 @@
       [::world/global ::world/control :reset]
       :then
       (s-> session
-           (o/insert ::this ::texts/to-render empty-text)
-           (o/insert ::this ::visible false))]
+           (o/retract ::this ::texts/to-render)
+           (o/insert ::this ::visible false)
+           (o/insert ::this ::test-counter -1))]
 
      ::reset-progress
      [:what
-      [::this ::control :progress]
+      [::this ::control ::trigger]
+      [::this ::test-counter counter {:then false}]
       :then
       (s-> session
-           (o/insert ::this ::texts/to-render text2)
-           (o/insert ::this ::visible true)
-           (o/insert ::this ::progress 0))]
+           (dev-only/inspect-session (doto counter println))
+           (o/insert ::this {::visible true ::progress 0 ::test-counter (inc counter)}))]
 
      ::progress-dialogue
      [:what
@@ -167,10 +170,11 @@
       [::camera/camera ::pos2d/pos2d pos]
       [::this ::visible true]
       [::this ::progress progress {:then false}]
+      [::this ::test-counter counter {:then false}]
       [::this ::delay-ms delay-ms {:then false}]
       :then
       (let [cam-pos (update-vals pos #(* % 16)) ;; 16 from tile-size
-            updated-text (-> text2
+            updated-text (-> (nth (cycle [text text2]) counter)
                              (assoc :progress progress)
                              (update :x - (:x cam-pos))
                              (update :y - (:y cam-pos)))]

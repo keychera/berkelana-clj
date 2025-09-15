@@ -17,39 +17,65 @@
   {::world/init-fn
    (fn [world _game]
      (-> world
-         (o/insert ::world/global ::mode ::in-movement)))
+         (o/insert ::world/global ::mode ::movement-mode)))
 
    ::world/rules
    (o/ruleset
-    {::input-mode
+    {::global-mode
      [:what
       [::time/now ::time/delta delta-time]
       [input-id ::input/pressed-key keystate]
-      [::world/global ::mode mode {:then false}]
-      [::world/global ::world/game game {:then false}]
       :then
       (let [keyname (keyword (name input-id))]
-        (cm/match [mode keyname keystate]
-          [_ (:or :r) ::input/keydown]
+        (cm/match [keyname keystate]
+          [(:or :r) ::input/keydown]
           (s-> session
-               (o/insert ::world/global ::mode ::in-movement)
-               (o/insert ::dialogues/this ::mode ::in-movement)
+               (o/insert ::world/global ::mode ::movement-mode)
+               (o/insert ::dialogues/this ::mode ::movement-mode)
                (o/insert ::world/global ::world/control :reset)
                (o/retract input-id ::input/pressed-key))
 
-          [::in-movement (:or :up :down :right :left) ::input/keydown]
+          :else :no-op))]
+
+     ::movement-mode
+     [:what
+      [::time/now ::time/delta delta-time]
+      [input-id ::input/pressed-key keystate]
+      [::world/global ::mode ::movement-mode {:then false}]
+      :then
+      (let [keyname (keyword (name input-id))]
+        (cm/match [keyname keystate]
+          [(:or :up :down :right :left) ::input/keydown]
           (s-> session
                (o/insert :chara/ubim ::grid-move/control keyname))
-          [::in-movement (:or :up :down :right :left) ::input/keyup]
+          [(:or :up :down :right :left) ::input/keyup]
           (s-> session
                (o/insert :chara/ubim ::grid-move/control :idle)
                (o/retract input-id ::input/pressed-key))
 
-          [(:or ::in-movement ::in-dialogue) (:or :space) ::input/keydown]
+          [(:or :space) ::input/keydown]
           (s-> session
                (o/insert ::world/global ::mode ::in-dialogue)
-               (o/insert ::dialogues/this ::dialogues/control :progress))
+               (o/insert ::dialogues/this ::dialogues/control ::dialogues/trigger))
 
-          :else
+          :else :no-op))]
+
+     ::dialogue-mode
+     [:what
+      [::time/now ::time/delta delta-time]
+      [input-id ::input/pressed-key keystate]
+      [::dialogues/this ::dialogues/test-counter counter]
+      [::world/global ::mode ::in-dialogue {:then false}]
+      :then
+      (let [keyname (keyword (name input-id))]
+        (cm/match [counter keyname keystate]
+          [3 _ _]
           (s-> session
-               (dev-only/inspect-session "not received" keyname))))]})})
+               (o/insert ::world/global ::mode ::in-movement))
+          
+          [_ (:or :space) ::input/keydown]
+          (s-> session
+               (o/insert ::world/global ::mode ::in-dialogue)
+               (o/insert ::dialogues/this ::dialogues/control ::dialogues/trigger))
+
+          :else :no-op))]})})
