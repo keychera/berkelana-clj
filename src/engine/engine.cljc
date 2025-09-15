@@ -81,7 +81,7 @@
                  (as-> w (reduce (fn [w' init-fn] (init-fn w' game)) w all-init))
                  (window/set-window game-width game-height)
                  (o/fire-rules))))
-    (def hmm-world (::world/atom* game))
+    (def hmm-game game)
     (compile-all game first-init?)))
 
 (def screen-entity
@@ -134,6 +134,6 @@
 
 (comment
   (+ 1 1)
-  ;; if you query the atom instead of deref atom, it will blow up js
-  (o/query-all @hmm-world ::texts/texts-to-render)
-  (filter #(= (first %) :chara/ubim) (o/query-all @hmm-world)))
+  ;; if you query the atom instead of deref atom, it will blow up js 
+  (o/query-all @(::world/atom* hmm-game) ::texts/texts-to-render)
+  (filter #(= (first %) :chara/ubim) (o/query-all @(::world/atom* hmm-game))))
