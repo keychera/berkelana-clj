@@ -18,7 +18,7 @@
    [rules.dev.dev-only :as dev-only]
    [rules.dialogues :as dialogues]
    [rules.grid-move :as grid-move]
-   [rules.input :as input]
+   [rules.interface.input :as input]
    [rules.room :as room]
    [rules.shader :as shader]
    [rules.sprites :as sprites]

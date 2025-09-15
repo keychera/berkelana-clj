@@ -11,7 +11,7 @@
    [play-cljc.transforms :as t]
    [rules.camera :as camera]
    [rules.dev.dev-only :as dev-only]
-   [rules.input :as input]
+   [rules.interface.input :as input]
    [rules.instanceable :as instanceable]
    [rules.pos2d :as pos2d]
    [rules.time :as time]))

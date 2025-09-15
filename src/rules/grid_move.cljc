@@ -7,7 +7,7 @@
    [engine.macros :refer [s-> insert!]]
    [engine.world :as world]
    [odoyle.rules :as o]
-   [rules.input :as input]
+   [rules.interface.input :as input]
    [rules.pos2d :as pos2d]
    [rules.time :as time]))
 

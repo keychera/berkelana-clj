@@ -4,7 +4,7 @@
    [engine.world :as world]
    [goog.events :as events]
    [odoyle.rules :as o]
-   [rules.input :as input]
+   [rules.interface.input :as input]
    [rules.window :as window]))
 
 (def world-queue (atom #queue []))

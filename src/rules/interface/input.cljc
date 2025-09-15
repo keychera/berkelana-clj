@@ -1,4 +1,4 @@
-(ns rules.input
+(ns rules.interface.input
   (:require
    [clojure.spec.alpha :as s]
    [odoyle.rules :as o])

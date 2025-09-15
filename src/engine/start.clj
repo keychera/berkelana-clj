@@ -3,7 +3,7 @@
    [engine.engine :as engine]
    [engine.world :as world]
    [odoyle.rules :as o]
-   [rules.input :as input]
+   [rules.interface.input :as input]
    [rules.window :as window])
   (:import
    [org.lwjgl.glfw
