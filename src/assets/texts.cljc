@@ -24,7 +24,20 @@
           :opt-un [::progress ::width]))
 
 (world/system system
-  {::world/rules
+  {::world/init-fn
+   (fn [world game]
+     (when (world/first-init? game)
+       (#?(:clj load-font-clj :cljs load-font-cljs)
+        ::fonts/cardboard-crown
+        (fn [{:keys [data]} baked-font]
+          (let [font-entity    (gl-text/->font-entity game data baked-font)
+                dynamic-entity (c/compile game (i/->instanced-entity font-entity))]
+            (swap! (::font-instances* game) assoc
+                   :font-entity font-entity
+                   :dynamic-entity dynamic-entity)))))
+     world)
+
+   ::world/rules
    (o/ruleset
     {::texts-to-render
      [:what
@@ -41,13 +54,3 @@
                                 (t/invert camera)
                                 (t/translate x y)
                                 (t/scale 0.2 0.2))))))))})
-
-(defn init [game]
-  (#?(:clj load-font-clj :cljs load-font-cljs)
-   ::fonts/cardboard-crown
-   (fn [{:keys [data]} baked-font]
-     (let [font-entity (gl-text/->font-entity game data baked-font)
-           dynamic-entity (c/compile game (i/->instanced-entity font-entity))]
-       (swap! (::font-instances* game) assoc
-              :font-entity font-entity
-              :dynamic-entity dynamic-entity)))))

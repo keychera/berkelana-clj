@@ -118,7 +118,7 @@
 (def text
   {:lines ["It is what you do with the gift of life that"
            "determines who you are."]
-   :x 4 :y 110 :width 128
+   :x 4 :y 135 :width 128
    :dialogue? true})
 
 (s/def ::delay-ms number?)

@@ -26,10 +26,9 @@
    [rules.ubim :as ubim]
    [rules.window :as window]))
 
-(defn compile-all [game first-init?]
+(defn compile-all [game]
   (shader/load-shader game)
-  (assets/load-asset game)
-  (when first-init? (texts/init game)))
+  (assets/load-asset game))
 
 (def all-rules-legacy-abstraction
   [window/rules
@@ -68,7 +67,6 @@
   (gl game enable (gl game BLEND))
   (gl game blendFunc (gl game SRC_ALPHA) (gl game ONE_MINUS_SRC_ALPHA))
   (let [[game-width game-height] (utils/get-size game)
-        first-init? (nil? @(::world/atom* game))
         all-rules   (apply concat (sp/select [sp/ALL ::world/rules] all-systems))
         all-init    (sp/select [sp/ALL ::world/init-fn some?] all-systems)
         reload-fns  (sp/select [sp/ALL ::world/reload-fn some?] all-systems)
@@ -82,7 +80,7 @@
                  (window/set-window game-width game-height)
                  (o/fire-rules))))
     (def hmm-game game)
-    (compile-all game first-init?)))
+    (compile-all game)))
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}

@@ -9,7 +9,7 @@
 (s/def ::img-to-load (s/and string? #(str/ends-with? % ".png")))
 (s/def ::type #{::spritesheet ::tiledmap})
 
-;; asset
+;; assets
 (s/def ::loaded? boolean?)
 (s/def ::db* #(instance? #?(:clj clojure.lang.Atom :cljs Atom) %))
 
@@ -32,7 +32,13 @@
   [_game asset-id {:keys [asset-type] :as _asset_data}]
   (println "asset(" asset-id ") has unhandled type (" asset-type ")"))
 
-(defn load-asset [game]
+(defn load-asset
+  "load-asset must be the last after every system init because of the order below:
+   1. `assets/system` insert `::assets/db*` to the `::world/global` in `::world/init-fn` that is ordered early in `engine/all-systems`
+   2. `rules.esse/asset` will populate `::assets/db*` in other system's `::world/init-fn`
+   3. `assets/load-asset` will be load all `[::asset/loaded? false]` last in `engine/compile-all`
+   "
+  [game] 
   (doseq [{:keys [asset-id loaded?]} (o/query-all @(::world/atom* game) ::to-load)]
     (when (not loaded?)
       (let [asset-data (get @(::db* game) asset-id)]

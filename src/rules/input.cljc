@@ -1,7 +1,6 @@
 (ns rules.input
   (:require
    [clojure.spec.alpha :as s]
-   [engine.macros :refer [s->]]
    [odoyle.rules :as o])
   #?(:clj (:import [org.lwjgl.glfw GLFW])))
 
