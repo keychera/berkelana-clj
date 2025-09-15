@@ -2,7 +2,6 @@
   (:require
    #?(:clj [assets.on-compile.fonts :as fonts :refer [load-font-clj]]
       :cljs [assets.on-compile.fonts :as fonts :refer-macros [load-font-cljs]])
-   #?(:cljs [rules.dev.leva-rules :as leva-rules])
    [assets.chars :as chars]
    [clojure.spec.alpha :as s]
    [engine.world :as world]
@@ -11,42 +10,37 @@
    [play-cljc.gl.text :as gl-text]
    [play-cljc.instances :as i]
    [play-cljc.transforms :as t]
-   [rules.dev.dev-only :as dev-only]))
+   [rules.dev.dev-only :as dev-only]
+   [rules.pos2d :as pos2d]))
 
 ;; from example play-cljc-examples/ui-gallery/src/ui_gallery
 
 (s/def ::font-instances* #(instance? #?(:clj clojure.lang.Atom :cljs Atom) %))
 
-(s/def ::counter int?)
-(s/def ::texts vector?)
+(s/def ::lines (s/coll-of string? :kind vector?))
+(s/def ::to-render
+  (s/keys :req-un [::lines ::pos2d/x ::pos2d/y]))
 
 (world/system system
-  {::world/init-fn
-   (fn [world _game]
-     (o/insert world ::test ::counter 0))
-
-   ::world/rules
+  {::world/rules
    (o/ruleset
-    {::counter
+    {::texts-to-render
      [:what
-      [::test ::texts texts]
-      [::test ::counter cnt]]})
+      [text-id ::to-render to-render]]})
 
    ::world/render-fn
    (fn text-render [world game camera game-width game-height]
-     (doseq [[x y] [[32 128] [24 100] [42 80]]]
-       (let [limit #?(:clj 64 :cljs (leva-rules/get-slider-value world))
-             {:keys [texts cnt]} (first (o/query-all world ::counter))
-             {:keys [font-entity dynamic-entity]} @(::font-instances* game)]
-         (when (and font-entity dynamic-entity texts)
-           (let [text (subvec texts 0 (mod cnt (inc (count texts))))]
-             (swap! (::world/atom* game) #(dev-only/send-dev-value % (str text)))
+     (let [{:keys [font-entity dynamic-entity]} @(::font-instances* game)]
+       (when (and font-entity dynamic-entity)
+         (doseq [text (o/query-all world ::texts-to-render)]
+           (let [{:keys [lines x y]} (:to-render text)]
+             (dev-only/inspect-game! game "che2ck" x y)
              (c/render game (-> (reduce
                                  (partial apply chars/assoc-char)
                                  dynamic-entity
-                                 (for [line-num (range (count text))
-                                       char-num (range (min limit (count (nth text line-num))))
-                                       :let [ch (get-in text [line-num char-num])]]
+                                 (for [line-num (range (count lines))
+                                       char-num (range (count (nth lines line-num)))
+                                       :let [ch (get-in lines [line-num char-num])]]
                                    [line-num char-num
                                     (-> font-entity
                                         (chars/crop-char ch)

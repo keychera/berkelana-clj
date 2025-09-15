@@ -81,6 +81,7 @@
                  (as-> w (reduce (fn [w' init-fn] (init-fn w' game)) w all-init))
                  (window/set-window game-width game-height)
                  (o/fire-rules))))
+    (def hmm-world (::world/atom* game))
     (compile-all game first-init?)))
 
 (def screen-entity
@@ -131,11 +132,8 @@
          :cljs (catch js/Error err (log-once game err "[tick-error] ")))))
   game)
 
-(defonce hmminator
-  (let [hmm-fn #(do (println "hmm") (def hmm %))]
-    (add-tap hmm-fn)))
-
 (comment
-
-  (o/query-all hmm ::sprites/sprite-esse)
-  (filter #(= (first %) :chara/ubim) (o/query-all hmm)))
+  (+ 1 1)
+  ;; if you query the atom instead of deref atom, it will blow up js
+  (o/query-all @hmm-world ::texts/texts-to-render)
+  (filter #(= (first %) :chara/ubim) (o/query-all @hmm-world)))

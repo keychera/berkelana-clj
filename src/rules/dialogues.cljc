@@ -9,6 +9,7 @@
    [play-cljc.gl.core :as c]
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
+   [rules.dev.dev-only :as dev-only]
    [rules.input :as input]
    [rules.instanceable :as instanceable]
    [rules.time :as time]))
@@ -40,13 +41,6 @@
     (reset! (::dialogue-instances* game)
             {::raw raw-image
              ::instanced dialogue-instanced})))
-
-(def script
-  ["it's okay now"
-   "It's all gone"
-   "You can be yourself again"])
-
-(s/def ::delay-ms number?)
 
 (defn nine-patch [raw camera width height pos-x pos-y]
   (let [frame-index 48 frame-w 32  inset 5 ;; hardcoded for now, or forever
@@ -104,21 +98,29 @@
   (when (some? (::raw @(::dialogue-instances* game)))
     (let [;; require frame to be square 
           x 32 y 128
-          {:keys [texts cnt]} (first (o/query-all world ::texts/counter))
+          {:keys [counter]} (first (o/query-all world ::test-counter))
           {::keys [raw instanced]} @(::dialogue-instances* game)
           width 64 height 18 pos-x 2 pos-y -30
-          nine-patch (nine-patch raw camera width height (+ x pos-x) (+ y pos-y))]
-      (when (> (mod cnt (inc (count texts))) 0)
+          nine-patch (nine-patch raw camera width height (+ x pos-x) (+ y pos-y))] 
+      (when (not= (mod counter 3) 0)
         (c/render game (-> (reduce-kv instances/assoc instanced nine-patch)
                            (t/project game-width game-height)))))))
+
+(def empty-text {:lines [] :x 0 :y 0})
+(def text
+  {:lines ["I see now that the circumstances of one's birth are irrelevant"
+           "It is what you do with the gift of life that determines who you are."]
+   :x 32 :y 128})
+
+(s/def ::delay-ms number?)
+(s/def ::counter int?)
 
 (world/system system
   {::world/init-fn
    (fn [world _game]
      (-> world
          (o/insert ::this ::delay-ms 0)
-         (o/insert ::texts/test ::texts/counter 0)
-         (o/insert ::texts/test ::texts/texts script)))
+         (o/insert ::mew2 ::counter 0)))
 
    ::world/rules
    (o/ruleset
@@ -135,19 +137,25 @@
      [:what
       [::time/now ::time/delta delta-time]
       [::this ::delay-ms delay-ms {:then false}]
-      :when
-      (> delay-ms 0)
+      :when (> delay-ms 0)
       :then (s-> session (o/insert ::this ::delay-ms (- delay-ms delta-time)))]
+
+     ::test-counter
+     [:what
+      [::mew2 ::counter counter]]
 
      ::progress-dialogue
      [:what
       [::input/space ::input/pressed-key ::input/keydown]
-      [::texts/test ::texts/counter counter {:then false}]
+      [::mew2 ::counter counter {:then false}]
       [::this ::delay-ms delay-ms {:then false}]
+      :when (<= delay-ms 0)
       :then
-      (when (<= delay-ms 0)
-        (s-> session
-             (o/insert ::this ::delay-ms 50)
-             (o/insert ::texts/test ::texts/counter (inc counter))))]})
+      (s-> session
+           (o/insert ::this ::delay-ms 50)
+           (cond->
+            :else (o/insert ::mew2 ::texts/to-render empty-text)
+            (not= (mod (inc counter) 3) 0) (o/insert ::mew2 ::texts/to-render text))
+           (o/insert ::mew2 ::counter (inc counter)))]})
 
    ::world/render-fn render})

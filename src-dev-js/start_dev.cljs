@@ -29,7 +29,7 @@
 
 (defonce dev-atom*
   (r/atom {:dev-value  "raw value"
-           :dev-slider {:value 0 :min 0 :max 64}}))
+           :dev-slider {:value 32 :min 0 :max 64}}))
 
 (defmulti on-dev-change (fn [k _old _new] k))
 
