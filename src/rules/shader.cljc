@@ -12,6 +12,7 @@
    [play-cljc.math :as m]
    [play-cljc.transforms :as t]
    [rules.pos2d :as pos2d]
+   [rules.room :as room]
    [rules.time :as time]))
 
 (def vertex-shader
@@ -95,6 +96,8 @@
      [:what
       [esse-id ::pos2d/x x]
       [esse-id ::pos2d/y y]
+      [esse-id ::room/currently-at room-id]
+      [::world/global ::room/currently-at room-id]
       [esse-id ::compiled-shader compiled-shader]]
 
      ::shader-update

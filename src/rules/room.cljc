@@ -15,9 +15,9 @@
    [rules.grid-move :as grid-move]
    [rules.pos2d :as pos2d]))
 
-(s/def ::active keyword?)
+(s/def ::currently-at keyword?)
 (s/def ::boundary map?)
-(s/def ::use keyword?)
+(s/def ::use-tiledmap keyword?)
 
 (declare load-room)
 
@@ -26,7 +26,7 @@
    (o/ruleset
     {::test-cycle-room
      [:what
-      [::world/global ::active room-id {:then false}]
+      [::world/global ::currently-at room-id {:then false}]
       [room-id ::boundary boundary {:then false}]
       [esse-id ::grid-move/move-state ::grid-move/idle]
       [esse-id ::grid-move/pos-x pos-x {:then false}]
@@ -35,20 +35,20 @@
       :then
       (cm/match [room-id pos-x pos-y]
         [:room/home 10 6] (s-> session
-                               (o/insert ::world/global ::active :room/yard)
+                               (o/insert ::world/global ::currently-at :room/yard)
                                (o/insert esse-id #::grid-move{:facing :down :prev-x 2  :prev-y 3 :next-x 2 :next-y 4 :move-y 1
                                                               :move-state ::grid-move/check-world-boundaries}))
         [:room/yard 2  3] (s-> session
-                               (o/insert ::world/global ::active :room/home)
+                               (o/insert ::world/global ::currently-at :room/home)
                                (o/insert esse-id #::grid-move{:facing :up :prev-x 10 :prev-y 6 :next-x 10 :next-y 5 :move-y -1
                                                               :move-state ::grid-move/check-world-boundaries}))
         :else :no-op)]
 
      ::active-room
      [:what
-      [::world/global ::active room-id]
+      [::world/global ::currently-at room-id]
       [room-id ::boundary boundary]
-      [room-id ::use asset-id]
+      [room-id ::use-tiledmap asset-id]
       [asset-id ::asset/loaded? true]
       [::world/global ::world/game game]
       [::asset/global ::asset/db* db*]

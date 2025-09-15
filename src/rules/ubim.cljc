@@ -2,8 +2,10 @@
   (:require
    [clojure.spec.alpha :as s]
    [engine.macros :refer [insert!]]
+   [engine.world :as world]
    [odoyle.rules :as o]
    [rules.grid-move :as grid-move]
+   [rules.room :as room]
    [rules.sprites :as sprites]
    [rules.time :as time]))
 
@@ -29,4 +31,8 @@
                  {::sprites/frame-index (case facing :down 1 :left 13 :right 25 :up 37 1)}
                  (let [pingpong (case (mod anim-tick 4) 0 -1 1 0 2 1 3 0)]
                    {::sprites/frame-index
-                    (- (case facing :down 1 :left 13 :right 25 :up 37 1) pingpong)}))))]}))
+                    (- (case facing :down 1 :left 13 :right 25 :up 37 1) pingpong)}))))]
+    
+    ::ubim-change-room
+    [:what [::world/global ::room/currently-at room-id]
+     :then (insert! :chara/ubim ::room/currently-at room-id)]}))

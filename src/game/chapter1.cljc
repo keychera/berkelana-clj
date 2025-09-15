@@ -20,26 +20,28 @@
 
 (defn initial-esse [world game]
   (-> world
+      (o/insert ::world/global ::room/currently-at :room/yard)
+      (o/insert :room/yard {::room/boundary {:x 0 :y 0 :width 8 :height 8}
+                            ::room/use-tiledmap      :id/worldmap})
       (esse :chara/ubim
             grid-move/default #::grid-move{:pos-x 2 :pos-y 4}
+            #::room{:currently-at :room/yard}
             #::sprites{:sprite-from-asset :id/berkelana :frame-index 0}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
       (esse :prop/bucket
-            grid-move/default #::grid-move{:pos-x 4 :pos-y 4 :pushable? true}
-            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 9) 5)}
-            #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
-      (esse :prop/kani
-            grid-move/default #::grid-move{:pos-x 5 :pos-y 5 :unwalkable? true}
-            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 18) 28)}
-            #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
+            grid-move/default #::grid-move{:pos-x 5 :pos-y 5 :pushable? true}
+            #::room{:currently-at :room/yard}
+            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 9) 5)}) 
       (esse :prop/shader
             grid-move/default #::grid-move{:pos-x 3 :pos-y 5 :pushable? true}
+            #::room{:currently-at :room/yard}
             {::shader/shader-to-load shader/->hati})
-      (o/insert ::world/global ::room/active :room/yard)
-      (o/insert :room/yard {::room/boundary {:x 0 :y 0 :width 8 :height 8}
-                            ::room/use      :id/worldmap})
       (o/insert :room/home {::room/boundary {:x 8 :y 0 :width 8 :height 8}
-                            ::room/use      :id/worldmap})
+                            ::room/use-tiledmap      :id/worldmap})
+      (esse :prop/kani
+            grid-move/default #::grid-move{:pos-x 12 :pos-y 4 :unwalkable? true}
+            #::room{:currently-at :room/home}
+            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 18) 28)})
       (cond->
        (not (world/first-init? game))
         (-> (esse :id/berkelana #::asset{:loaded? true})

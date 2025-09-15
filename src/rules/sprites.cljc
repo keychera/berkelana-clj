@@ -9,7 +9,8 @@
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
    [rules.instanceable :as instanceable]
-   [rules.pos2d :as pos2d]))
+   [rules.pos2d :as pos2d]
+   [rules.room :as room]))
 
 (s/def ::sprite-from-asset any?)
 (s/def ::frame-index int?)
@@ -23,6 +24,8 @@
       [esse-id ::pos2d/y y]
       [esse-id ::frame-index frame-index]
       [esse-id ::sprite-from-asset asset-id]
+      [esse-id ::room/currently-at room-id]
+      [::world/global ::room/currently-at room-id]
       [asset-id ::asset/loaded? true]]})
 
    ::world/render-fn
