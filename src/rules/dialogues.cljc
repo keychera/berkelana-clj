@@ -9,11 +9,12 @@
    [play-cljc.gl.core :as c]
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
+   [rules.camera :as camera]
+   [rules.dev.dev-only :as dev-only]
    [rules.input :as input]
    [rules.instanceable :as instanceable]
    [rules.pos2d :as pos2d]
-   [rules.time :as time]
-   [rules.dev.dev-only :as dev-only]))
+   [rules.time :as time]))
 
 (def dialogue-box-frag-shader
   {:precision "mediump float"
@@ -95,7 +96,7 @@
                    (t/crop crop-x (+ crop-y frame-w (- inset)) inset inset))]
     [center left l+u up u+r right r+d down d+l]))
 
-(defn render [world game camera game-width game-height] 
+(defn render [world game camera game-width game-height]
   (when (some? (::raw @(::dialogue-instances* game)))
     (doseq [text (->> (o/query-all world ::texts/texts-to-render)
                       (map :content)
@@ -128,7 +129,7 @@
    (fn [world _game]
      (-> world
          (o/insert ::mew2 ::delay-ms 0)
-         (o/insert ::mew2 ::texts/content text)
+         (o/insert ::mew2 ::texts/to-render text)
          (o/insert ::mew2 ::progress 0)))
 
    ::world/rules
@@ -142,13 +143,6 @@
       (when (nil? @(::dialogue-instances* game))
         (init-asset game db*))]
 
-     ::progress-delay
-     [:what
-      [::time/now ::time/delta delta-time]
-      [::mew2 ::delay-ms delay-ms {:then false}]
-      :when (> delay-ms 0)
-      :then (s-> session (o/insert ::mew2 ::delay-ms (- delay-ms delta-time)))] 
-
      ::reset-progress
      [:what
       [::time/now ::time/delta delta-time]
@@ -159,14 +153,20 @@
      ::progress-dialogue
      [:what
       [::time/now ::time/delta delta-time]
+      [::camera/camera ::pos2d/pos2d pos]
       [::mew2 ::progress progress {:then false}]
       [::mew2 ::delay-ms delay-ms {:then false}]
-      :when (<= delay-ms 0)
       :then
-      (s-> session
-           (dev-only/inspect-session "hello" progress)
-           (o/insert ::mew2 ::delay-ms 5)
-           (o/insert ::mew2 ::texts/content (assoc text :progress progress))
-           (o/insert ::mew2 ::progress (inc progress)))]})
+      (let [cam-pos (update-vals pos #(* % 16)) ;; 16 from tile-size
+            updated-text (-> text
+                             (assoc :progress progress)
+                             (update :x - (:x cam-pos))
+                             (update :y - (:y cam-pos)))]
+        (s-> session
+             (dev-only/inspect-session progress pos)
+             (o/insert ::mew2 ::texts/to-render updated-text)
+             (cond-> (>  delay-ms 0) (o/insert ::mew2 ::delay-ms (- delay-ms delta-time))
+                     (<= delay-ms 0) (-> (o/insert ::mew2 ::delay-ms 5)
+                                         (o/insert ::mew2 ::progress (inc progress))))))]})
 
    ::world/render-fn render})

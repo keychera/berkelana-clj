@@ -19,7 +19,7 @@
 (s/def ::lines (s/coll-of string? :kind vector?))
 (s/def ::progress int?)
 (s/def ::width number?)
-(s/def ::content
+(s/def ::to-render
   (s/keys :req-un [::lines ::pos2d/x ::pos2d/y]
           :opt-un [::progress ::width]))
 
@@ -28,7 +28,7 @@
    (o/ruleset
     {::texts-to-render
      [:what
-      [text-id ::content content]]})
+      [text-id ::to-render content]]})
 
    ::world/render-fn
    (fn text-render [world game camera game-width game-height]
