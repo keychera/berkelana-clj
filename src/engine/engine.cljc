@@ -35,7 +35,6 @@
    time/rules
    input/rules
    tiled/rules
-   shader/rules
    ubim/rules
    dev-only/rules])
 
@@ -49,6 +48,7 @@
            sprites/system
            dialogues/system
            texts/system
+           shader/system
            chapter1/system]
           (into [] (map (fn [r] {::world/rules r})) all-rules-legacy-abstraction)))
 
@@ -122,8 +122,7 @@
             camera (cam-fn camera)]
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
-                             (update :viewport assoc :width game-width :height game-height)))
-          (shader/render-shader-esses world game game-width game-height)
+                             (update :viewport assoc :width game-width :height game-height))) 
           (doseq [render-fn @(::render-fns* game)]
             (render-fn world game camera game-width game-height))))
       #?(:clj  (catch Exception err (throw err))

@@ -11,6 +11,7 @@
    [rules.grid-move :as grid-move]
    [rules.input :as input]
    [rules.room :as room]
+   [rules.shader :as shader]
    [rules.sprites :as sprites]
    [rules.ubim :as ubim]))
 
@@ -27,14 +28,13 @@
             grid-move/default #::grid-move{:pos-x 4 :pos-y 4 :pushable? true}
             #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 9) 5)}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
-      (esse :prop/bucket2
-            grid-move/default #::grid-move{:pos-x 3 :pos-y 5 :pushable? true}
-            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 9) 5)}
-            #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
       (esse :prop/kani
             grid-move/default #::grid-move{:pos-x 5 :pos-y 5 :unwalkable? true}
             #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 18) 28)}
             #::ubim{:anim-tick 0 :anim-elapsed-ms 0})
+      (esse :prop/shader
+            grid-move/default #::grid-move{:pos-x 3 :pos-y 5 :pushable? true}
+            {::shader/shader-to-load shader/->hati})
       (o/insert ::world/global ::room/active :room/yard)
       (o/insert :room/yard {::room/boundary {:x 0 :y 0 :width 8 :height 8}
                             ::room/use      :id/worldmap})

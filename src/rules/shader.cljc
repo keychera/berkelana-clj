@@ -14,38 +14,6 @@
    [rules.pos2d :as pos2d]
    [rules.time :as time]))
 
-(def rules
-  (o/ruleset
-   {::load-shader
-    [:what
-     [esse-id ::shader-to-load shader-fn]]
-
-    ::loading-shader
-    [:what
-     [esse-id ::shader-to-load shader-fn]
-     [esse-id ::loading? true]
-     :then
-     (s-> session (o/retract esse-id ::shader-to-load))]
-
-    ::shader-esse
-    [:what
-     [esse-id ::pos2d/x x]
-     [esse-id ::pos2d/y y]
-     [esse-id ::compiled-shader compiled-shader]]
-
-    ::shader-update
-    [:what
-     [::time/now ::time/total total-time]
-     [esse-id ::compiled-shader compiled-shader {:then false}]
-     :then
-     (insert! esse-id ::compiled-shader
-              (->> compiled-shader
-                   (specter/setval [:uniforms 'u_time] total-time)))]}))
-
-(s/def ::shader-to-load fn?)
-(s/def ::loading? boolean?)
-(s/def ::compiled-shader map?)
-
 (def vertex-shader
   '{:version "300 es"
     :precision "mediump float"
@@ -105,12 +73,47 @@
            (swap! (::world/atom* game) #(-> % (o/retract esse-id ::loading?)))
            (throw err)))))
 
-(defn render-shader-esses [world game game-width game-height]
-  (let [shader-esses (o/query-all world ::shader-esse)]
-    (doseq [esse shader-esses]
-      (let [{:keys [x y compiled-shader]} esse]
-        (c/render game
-                  (-> compiled-shader
-                      (t/project game-width game-height)
-                      (t/translate x y)
-                      (t/scale 64 64)))))))
+(s/def ::shader-to-load fn?)
+(s/def ::loading? boolean?)
+(s/def ::compiled-shader map?)
+
+(world/system system
+  {::world/rules
+   (o/ruleset
+    {::load-shader
+     [:what
+      [esse-id ::shader-to-load shader-fn]]
+
+     ::loading-shader
+     [:what
+      [esse-id ::shader-to-load shader-fn]
+      [esse-id ::loading? true]
+      :then
+      (s-> session (o/retract esse-id ::shader-to-load))]
+
+     ::shader-esse
+     [:what
+      [esse-id ::pos2d/x x]
+      [esse-id ::pos2d/y y]
+      [esse-id ::compiled-shader compiled-shader]]
+
+     ::shader-update
+     [:what
+      [::time/now ::time/total total-time]
+      [esse-id ::compiled-shader compiled-shader {:then false}]
+      :then
+      (insert! esse-id ::compiled-shader
+               (->> compiled-shader
+                    (specter/setval [:uniforms 'u_time] total-time)))]})
+   ::world/render-fn
+   (fn [world game camera game-width game-height]
+     (let [shader-esses (o/query-all world ::shader-esse)]
+       (doseq [esse shader-esses]
+         (let [{:keys [x y compiled-shader]} esse
+               offset-fn #(- % 8)]
+           (c/render game
+                     (-> compiled-shader
+                         (t/project game-width game-height)
+                         (t/invert camera)
+                         (t/translate (offset-fn x) (offset-fn y))
+                         (t/scale 16 16)))))))})
