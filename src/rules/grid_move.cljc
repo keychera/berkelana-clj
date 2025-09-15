@@ -7,7 +7,6 @@
    [engine.macros :refer [s-> insert!]]
    [engine.world :as world]
    [odoyle.rules :as o]
-   [rules.interface.input :as input]
    [rules.pos2d :as pos2d]
    [rules.time :as time]))
 
@@ -39,6 +38,9 @@
 (def sp->map-dimension (sp/multi-path [:id/worldmap ::tiled/tiled-map :map-width]
                                       [:id/worldmap ::tiled/tiled-map :map-height]))
 
+;; control
+(s/def ::control #{:idle :up :down :left :right})
+
 (def grid 16)
 (world/system system
   {::world/rules
@@ -61,18 +63,18 @@
      ::move-ubim
      [:what
       [::time/now ::time/delta delta-time]
-      [keyname ::input/pressed-key ::input/keydown]
+      [esse-id ::control control {:then false}] ;; somehow this trigger recursion limit without {:then false}
       [esse-id ::pos-x pos-x {:then false}]
       [esse-id ::pos-y pos-y {:then false}]
       [esse-id ::move-delay move-delay {:then false}]
       :when
       (= esse-id :chara/ubim)
       (<= move-delay 0)
-      (#{::input/left ::input/right ::input/up ::input/down} keyname)
+      (#{:up :down :left :right} control)
       :then
-      (let [move-x (case keyname ::input/left -1 ::input/right 1 0)
-            move-y (case keyname ::input/up   -1 ::input/down  1 0)]
-        (insert! esse-id {::facing (keyword (name keyname))
+      (let [move-x (case control :left -1 :right 1 0) 
+            move-y (case control :up   -1 :down  1 0)]
+        (insert! esse-id {::facing control
                           ::move-state ::plan-move ::move-x move-x ::move-y move-y}))]
 
      ::plan-move

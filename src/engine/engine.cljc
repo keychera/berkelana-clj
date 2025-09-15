@@ -18,6 +18,7 @@
    [rules.dev.dev-only :as dev-only]
    [rules.dialogues :as dialogues]
    [rules.grid-move :as grid-move]
+   [rules.interface.director :as director]
    [rules.interface.input :as input]
    [rules.room :as room]
    [rules.shader :as shader]
@@ -33,7 +34,6 @@
 (def all-rules-legacy-abstraction
   [window/rules
    time/rules
-   input/rules
    tiled/rules
    ubim/rules
    dev-only/rules])
@@ -42,6 +42,8 @@
   ;; gonna refactor everything to this
   (concat [#?(:cljs leva-rules/sysyem)
            assets/system
+           input/system
+           director/system
            camera/system
            grid-move/system
            room/system
@@ -122,7 +124,7 @@
             camera (cam-fn camera)]
         (when (and (pos? game-width) (pos? game-height))
           (c/render game (-> screen-entity
-                             (update :viewport assoc :width game-width :height game-height))) 
+                             (update :viewport assoc :width game-width :height game-height)))
           (doseq [render-fn @(::render-fns* game)]
             (render-fn world game camera game-width game-height))))
       #?(:clj  (catch Exception err (throw err))

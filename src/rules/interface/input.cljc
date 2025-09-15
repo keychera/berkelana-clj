@@ -1,7 +1,8 @@
 (ns rules.interface.input
   (:require
    [clojure.spec.alpha :as s]
-   [odoyle.rules :as o])
+   [odoyle.rules :as o]
+   [engine.world :as world])
   #?(:clj (:import [org.lwjgl.glfw GLFW])))
 
 #?(:clj
@@ -32,13 +33,14 @@
 (s/def ::keydown any?)
 (s/def ::keyup any?)
 
-(def rules
-  (o/ruleset
-   {::mouse
-    [:what
-     [::mouse ::x mouse-x]
-     [::mouse ::y mouse-y]]
+(world/system system
+  {::world/rules
+   (o/ruleset
+    {::mouse
+     [:what
+      [::mouse ::x mouse-x]
+      [::mouse ::y mouse-y]]
 
-    ::pressed-key
-    [:what
-     [keyname ::pressed-key keystate]]}))
+     ::pressed-key
+     [:what
+      [keyname ::pressed-key keystate]]})})

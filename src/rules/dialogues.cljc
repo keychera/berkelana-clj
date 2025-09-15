@@ -10,8 +10,6 @@
    [play-cljc.instances :as instances]
    [play-cljc.transforms :as t]
    [rules.camera :as camera]
-   [rules.dev.dev-only :as dev-only]
-   [rules.interface.input :as input]
    [rules.instanceable :as instanceable]
    [rules.pos2d :as pos2d]
    [rules.time :as time]))
@@ -109,28 +107,31 @@
                            (t/project game-width game-height)))))))
 
 (def empty-text {:lines [] :x 0 :y 0})
-(def text2
+(def text
   {:lines ["I see now that the circumstances of one's birth"
            "are irrelevant"]
    :x 4 :y 110 :width 128
    :dialogue? true})
 
-(def text
+(def text2
   {:lines ["It is what you do with the gift of life that"
            "determines who you are."]
    :x 4 :y 135 :width 128
    :dialogue? true})
 
+(nth (cycle [1 2 3]) 5)
+
 (s/def ::delay-ms number?)
 (s/def ::progress int?)
+(s/def ::visible boolean?)
+(s/def ::control #{:progress})
 
 (world/system system
   {::world/init-fn
    (fn [world _game]
      (-> world
-         (o/insert ::mew2 ::delay-ms 0)
-         (o/insert ::mew2 ::texts/to-render text)
-         (o/insert ::mew2 ::progress 0)))
+         (o/insert ::this ::delay-ms 0)
+         (o/insert ::this ::visible false)))
 
    ::world/rules
    (o/ruleset
@@ -143,30 +144,40 @@
       (when (nil? @(::dialogue-instances* game))
         (init-asset game db*))]
 
+     ::reset-world
+     [:what
+      [::world/global ::world/control :reset]
+      :then
+      (s-> session
+           (o/insert ::this ::texts/to-render empty-text)
+           (o/insert ::this ::visible false))]
+
      ::reset-progress
      [:what
-      [::time/now ::time/delta delta-time]
-      [::input/space ::input/pressed-key ::input/keydown]
+      [::this ::control :progress]
       :then
-      (s-> session (o/insert ::mew2 ::progress 0))]
+      (s-> session
+           (o/insert ::this ::texts/to-render text2)
+           (o/insert ::this ::visible true)
+           (o/insert ::this ::progress 0))]
 
      ::progress-dialogue
      [:what
       [::time/now ::time/delta delta-time]
       [::camera/camera ::pos2d/pos2d pos]
-      [::mew2 ::progress progress {:then false}]
-      [::mew2 ::delay-ms delay-ms {:then false}]
+      [::this ::visible true]
+      [::this ::progress progress {:then false}]
+      [::this ::delay-ms delay-ms {:then false}]
       :then
       (let [cam-pos (update-vals pos #(* % 16)) ;; 16 from tile-size
-            updated-text (-> text
+            updated-text (-> text2
                              (assoc :progress progress)
                              (update :x - (:x cam-pos))
                              (update :y - (:y cam-pos)))]
         (s-> session
-             (dev-only/inspect-session progress pos)
-             (o/insert ::mew2 ::texts/to-render updated-text)
-             (cond-> (>  delay-ms 0) (o/insert ::mew2 ::delay-ms (- delay-ms delta-time))
-                     (<= delay-ms 0) (-> (o/insert ::mew2 ::delay-ms 5)
-                                         (o/insert ::mew2 ::progress (inc progress))))))]})
+             (o/insert ::this ::texts/to-render updated-text)
+             (cond-> (>  delay-ms 0) (o/insert ::this ::delay-ms (- delay-ms delta-time))
+                     (<= delay-ms 0) (-> (o/insert ::this ::delay-ms 5)
+                                         (o/insert ::this ::progress (inc progress))))))]})
 
    ::world/render-fn render})

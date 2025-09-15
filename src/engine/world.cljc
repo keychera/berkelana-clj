@@ -21,6 +21,8 @@
 (s/def ::system
   (s/keys :opt [::rules ::init-fn ::reload-fn ::render-fn]))
 
+(s/def ::control #{:reset})
+
 #?(:clj
    ;; if the user of this fn does not require spec
    (defmacro system [name m]

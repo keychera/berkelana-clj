@@ -66,7 +66,7 @@
    (o/ruleset
     {::reset
      [:what
-      [::input/r ::input/pressed-key ::input/keydown]
+      [::world/global ::world/control :reset]
       [::world/global ::world/game game]
       :then
       (println "resetting world!")
