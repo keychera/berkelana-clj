@@ -17,7 +17,7 @@
   {::world/init-fn
    (fn [world _game]
      (-> world
-         (o/insert ::world/global ::mode ::movement-mode)))
+         (o/insert ::world/global ::mode ::mode-movement)))
 
    ::world/rules
    (o/ruleset
@@ -30,18 +30,17 @@
         (cm/match [keyname keystate]
           [(:or :r) ::input/keydown]
           (s-> session
-               (o/insert ::world/global ::mode ::movement-mode)
-               (o/insert ::dialogues/this ::mode ::movement-mode)
+               (o/insert ::world/global ::mode ::mode-movement)
                (o/insert ::world/global ::world/control :reset)
                (o/retract input-id ::input/pressed-key))
 
           :else :no-op))]
 
-     ::movement-mode
+     ::mode-movement
      [:what
       [::time/now ::time/delta delta-time]
       [input-id ::input/pressed-key keystate]
-      [::world/global ::mode ::movement-mode {:then false}]
+      [::world/global ::mode ::mode-movement {:then false}]
       :then
       (let [keyname (keyword (name input-id))]
         (cm/match [keyname keystate]
@@ -55,27 +54,30 @@
 
           [(:or :space) ::input/keydown]
           (s-> session
-               (o/insert ::world/global ::mode ::in-dialogue)
+               (o/insert ::world/global ::mode ::mode-dialogue)
                (o/insert ::dialogues/this ::dialogues/control ::dialogues/trigger))
 
           :else :no-op))]
 
-     ::dialogue-mode
+     ::mode-dialogue
      [:what
       [::time/now ::time/delta delta-time]
       [input-id ::input/pressed-key keystate]
       [::dialogues/this ::dialogues/test-counter counter]
-      [::world/global ::mode ::in-dialogue {:then false}]
+      [::world/global ::mode ::mode-dialogue {:then false}]
       :then
       (let [keyname (keyword (name input-id))]
         (cm/match [counter keyname keystate]
-          [3 _ _]
+          [1 (:or :space) ::input/keydown]
           (s-> session
-               (o/insert ::world/global ::mode ::in-movement))
-          
+               (o/insert ::dialogues/this ::dialogues/control ::dialogues/end)
+               (o/insert ::world/global ::mode ::mode-movement)
+               (o/retract input-id ::input/pressed-key))
+
           [_ (:or :space) ::input/keydown]
           (s-> session
-               (o/insert ::world/global ::mode ::in-dialogue)
-               (o/insert ::dialogues/this ::dialogues/control ::dialogues/trigger))
+               (o/insert ::world/global ::mode ::mode-dialogue)
+               (o/insert ::dialogues/this ::dialogues/control ::dialogues/trigger)
+               (o/retract input-id ::input/pressed-key))
 
           :else :no-op))]})})

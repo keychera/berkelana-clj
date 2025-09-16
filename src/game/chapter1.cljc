@@ -9,7 +9,6 @@
    [odoyle.rules :as o]
    [rules.esse :as esse :refer [asset esse]]
    [rules.grid-move :as grid-move]
-   [rules.interface.input :as input]
    [rules.room :as room]
    [rules.shader :as shader]
    [rules.sprites :as sprites]

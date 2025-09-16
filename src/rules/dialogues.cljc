@@ -124,7 +124,7 @@
 (s/def ::visible boolean?)
 
 ;; control
-(s/def ::control #{::trigger})
+(s/def ::control #{::trigger ::end})
 (s/def ::test-counter int?)
 
 (world/system system
@@ -149,20 +149,31 @@
      ::reset-world
      [:what
       [::world/global ::world/control :reset]
+      [::this ::texts/to-render _ {:then false}]
       :then
       (s-> session
            (o/retract ::this ::texts/to-render)
            (o/insert ::this ::visible false)
            (o/insert ::this ::test-counter -1))]
 
-     ::reset-progress
+     ::trigger-dialogue
      [:what
       [::this ::control ::trigger]
       [::this ::test-counter counter {:then false}]
       :then
       (s-> session
-           (dev-only/inspect-session (doto counter println))
+           (o/retract ::this ::control)
            (o/insert ::this {::visible true ::progress 0 ::test-counter (inc counter)}))]
+
+     ::remove-dialogue
+     [:what
+      [::this ::control ::end]
+      [::this ::texts/to-render _ {:then false}]
+      :then
+      (s-> session
+           (o/retract ::this ::texts/to-render)
+           (o/insert ::this ::visible false)
+           (o/insert ::this ::test-counter -1))]
 
      ::progress-dialogue
      [:what
