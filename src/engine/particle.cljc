@@ -15,31 +15,8 @@
     -0.5 0.5 0.0
     0.5 0.5 0.0]))
 
-(def max-particle 4)
-;; (def positions-data
-;;   (#?(:clj float-array :cljs #(js/Float32Array. %))
-;;    (* max-particle 4)))
-
-;; (def colors-data
-;;   (#?(:clj int-array   :cljs #(js/Uint8Array. %))
-;;    (* max-particle 4)))
-
-(def positions-data
-  (#?(:clj float-array :cljs #(js/Float32Array. %))
-   [-0.5 -0.5 0.0 0.1   ;; bottom-left
-    0.5 -0.5 0.0 0.1   ;; bottom-right
-    -0.5  0.5 0.0 0.1   ;; top-left
-    0.5  0.5 0.0 0.1])) ;; top-right
-
-;; Colors: RGBA per vertex (0–255)
-(def colors-data
-  (#?(:clj int-array :cljs #(js/Uint8Array. %))
-   [255 0 0 255    ;; red
-    0 255 0 255    ;; green
-    0 0 255 255    ;; blue
-    255 255 0 255])) ;; yellow
-
-(def db* (volatile! {}))
+(def max-particle 100000)
+(def db* (volatile! {:particles []}))
 
 (def bytes-per-float #?(:clj Float/BYTES :cljs js/Float32Array.BYTES_PER_ELEMENT))
 (def bytes-per-ubyte #?(:clj Byte/BYTES :cljs js/Uint8Array.BYTES_PER_ELEMENT))
@@ -50,21 +27,23 @@
    :inputs     '{a_billboard vec3
                  a_particle_pos_size vec4
                  a_particle_color vec4}
-   :outputs    '{o_color vec4}
+   :outputs    '{v_color vec4}
    :signatures '{main ([] void)}
    :functions
    '{main ([]
            (=vec3 pos (+ (* a_billboard a_particle_pos_size.w) a_particle_pos_size.xyz))
-           (= o_color a_particle_color)
+           (= v_color a_particle_color)
            (= gl_Position (vec4 pos "1.0")))}})
 
 (def fragment-shader
   {:precision  "mediump float"
-   :inputs     '{a_color vec4}
+   :inputs     '{v_color vec4}
    :outputs    '{o_color vec4}
    :signatures '{main ([] void)}
    :functions
-   '{main ([] (= o_color (vec4 "1.0" "0.0" "0.0" "1.0")))}})
+   '{main ([] (= o_color v_color))}})
+
+(iglu/iglu->glsl (merge {:version glsl-version} vertex-shader))
 
 (defn init [game]
   (let [vertex-source (iglu/iglu->glsl (merge {:version glsl-version} vertex-shader))
@@ -82,7 +61,7 @@
     (let [positions-buffer (gl-utils/create-buffer game)
           loc (gl game getAttribLocation program "a_particle_pos_size")]
       (gl game bindBuffer (gl game ARRAY_BUFFER) positions-buffer)
-      (gl game bufferData (gl game ARRAY_BUFFER) positions-data (gl game STREAM_DRAW))
+      (gl game bufferData (gl game ARRAY_BUFFER) (* max-particle 4 bytes-per-float) (gl game STREAM_DRAW))
       (vswap! db* assoc
               :positions-buffer positions-buffer
               :positions-loc loc))
@@ -90,39 +69,60 @@
     (let [colors-buffer (gl-utils/create-buffer game)
           loc (gl game getAttribLocation program "a_particle_color")]
       (gl game bindBuffer (gl game ARRAY_BUFFER) colors-buffer)
-      (gl game bufferData (gl game ARRAY_BUFFER) colors-data (gl game STREAM_DRAW))
+      (gl game bufferData (gl game ARRAY_BUFFER) (* max-particle 4 bytes-per-ubyte) (gl game STREAM_DRAW))
       (vswap! db* assoc
               :colors-buffer colors-buffer
               :colors-loc loc))))
 
-(defn render [_world game]
-  (let [{:keys [program
+(def particle-per-second 10000)
+
+(defn update-particle [db _world game]
+  (let [{:keys [delta-time]} game
+        new-particles-n (int (* (/ (min delta-time 16) 1000) particle-per-second))
+        new-particles (->> (range new-particles-n)
+                           (mapv (fn [i]
+                                   {:pos [(- (rand 2) 1) (- (rand 2) 1) 0 0.04]
+                                    :color (case (rand-int 4)
+                                             0 [155 0 0 100]
+                                             1 [0 155 0 100]
+                                             2 [0 0 155 100]
+                                             3 [155 155 0 100])
+                                    :life-ms 1000})))]
+    (update db :particles
+            (fn [current-particles]
+              (->> (concat current-particles new-particles)
+                   (filter #(> (:life-ms %) 0))
+                   (map (fn [particle]
+                          (-> particle (update :life-ms - delta-time)))))))))
+
+(defn render [world game]
+  (let [{:keys [program particles
                 billboard-buffer billboard-loc
                 positions-buffer positions-loc
-                colors-buffer colors-loc]} @db*]
+                colors-buffer colors-loc]} (vswap! db* update-particle world game)
+        positions-data (#?(:clj float-array :cljs #(js/Float32Array. %)) (mapcat :pos particles))
+        particle-count (max (count particles) max-particle)
+        colors-data    (#?(:clj int-array :cljs #(js/Uint8Array. %)) (mapcat :color particles))]
     (when (and billboard-buffer positions-buffer colors-buffer)
-      ;; billboard
+      (gl game useProgram program)
       (let [loc billboard-loc]
-        (gl game enableVertexAttribArray loc)
         (gl game bindBuffer (gl game ARRAY_BUFFER) billboard-buffer)
-        (gl game vertexAttribPointer loc 3 (gl game FLOAT) (gl game FALSE) 0 0)
+        (gl game enableVertexAttribArray loc)
+        (gl game vertexAttribPointer loc 3 (gl game FLOAT) false 0 0)
         (gl game vertexAttribDivisor loc 0))
 
       (let [loc positions-loc]
-        (gl game enableVertexAttribArray loc)
         (gl game bindBuffer (gl game ARRAY_BUFFER) positions-buffer)
-        (gl game bufferData (gl game ARRAY_BUFFER) (* max-particle 4 bytes-per-float) (gl game STREAM_DRAW))
-        (gl game bufferSubData (gl game ARRAY_BUFFER) 0 positions-data)
-        (gl game vertexAttribPointer loc 4 (gl game FLOAT) (gl game FALSE) 0 0)
+        (gl game bufferData (gl game ARRAY_BUFFER) positions-data (gl game STREAM_DRAW))
+        (gl game enableVertexAttribArray loc)
+        (gl game vertexAttribPointer loc 4 (gl game FLOAT) false 0 0)
         (gl game vertexAttribDivisor loc 1))
 
       (let [loc colors-loc]
-        (gl game enableVertexAttribArray loc)
         (gl game bindBuffer (gl game ARRAY_BUFFER) colors-buffer)
-        (gl game bufferData (gl game ARRAY_BUFFER) (* max-particle 4 bytes-per-ubyte) (gl game STREAM_DRAW))
-        (gl game bufferSubData (gl game ARRAY_BUFFER) 0 colors-data)
-        (gl game vertexAttribPointer loc 4 (gl game UNSIGNED_BYTE) (gl game TRUE) 0 0)
+        (gl game bufferData (gl game ARRAY_BUFFER) colors-data (gl game STREAM_DRAW))
+        (gl game enableVertexAttribArray loc)
+        (gl game vertexAttribPointer loc 4 (gl game UNSIGNED_BYTE) true 0 0)
         (gl game vertexAttribDivisor loc 1))
 
-      (gl game useProgram program)
-      (gl game drawArraysInstanced (gl game TRIANGLE_STRIP) 0 4 max-particle))))
+      (gl game drawArraysInstanced (gl game TRIANGLE_STRIP) 0 4 particle-count))))
