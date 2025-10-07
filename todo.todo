@@ -65,6 +65,12 @@ todo:
 
 
     ☐ particle
+        ✔ generating particle with drawArrayInstanced @done(25-10-08 00:20)
+        ☐ the simple physics
+        ☐ the sampler2d
+        ☐ the transform system
+        ☐ particle not rendering at all on jvm game
+        ☐ learn how to measure the performance of this particle system
 
     ☐ post-effect
         ☐ learn render to texture
@@ -78,6 +84,14 @@ todo:
     ☐ ordered execution
         ✔ text dialogue @done(25-09-03 07:23)
         ☐ menu -> game
+
+    ☐ text system
+        ☐ the sub sentences dialogue advance\
+        ☐ trigger on npc and objects
+        ☐ story management
+        ☐ the text effect
+        ☐ text as particle
+        ☐ audio effect
 
     ☐ sound effect
     ☐ music
