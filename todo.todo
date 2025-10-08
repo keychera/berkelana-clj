@@ -69,7 +69,7 @@ todo:
         ☐ the simple physics
         ☐ the sampler2d
         ☐ the transform system
-        ☐ particle not rendering at all on jvm game
+        ✔ particle not rendering at all on jvm game @done(25-10-08 21:57)
         ☐ learn how to measure the performance of this particle system
 
     ☐ post-effect

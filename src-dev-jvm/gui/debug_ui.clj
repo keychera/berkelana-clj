@@ -38,7 +38,7 @@
 
 (defn layer []
   (ImGui/begin "State")
-  (ImGui/text "Hello! hahaha I can reload in JVM now!!!")
+  (ImGui/text "I am beginning to bbelieve")
   (fps-panel!)
   (ImGui/end))
 
