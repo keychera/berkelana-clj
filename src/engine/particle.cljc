@@ -80,22 +80,28 @@
 
 (defn update-particle [db _world game]
   (let [{:keys [delta-time]} game
-        new-particles-n (int (* (/ (min delta-time 16) 1000) particle-rate))
+        delta-ms (/ delta-time 1000)
+        new-particles-n (int (* delta-ms particle-rate))
         new-particles (->> (range new-particles-n)
                            (mapv (fn [_i]
-                                   {:pos [(- (rand 2) 1) (- (rand 2) 1) 0 0.04]
+                                   {:speed [(- (rand 2) 1) (rand 4)]
+                                    :pos [0 0 0 0.04]
                                     :color (case (rand-int 4)
-                                             0 [155 0 0 100]
-                                             1 [0 155 0 100]
-                                             2 [0 0 155 100]
-                                             3 [155 155 0 100])
+                                             0 [155 0 0 255]
+                                             1 [0 155 0 255]
+                                             2 [0 0 155 255]
+                                             3 [155 155 0 255])
                                     :life-ms 1000})))]
     (update db :particles
             (fn [current-particles]
-              (->> (concat current-particles new-particles)
+              (->> (concat new-particles current-particles)
                    (filter #(> (:life-ms %) 0))
                    (map (fn [particle]
-                          (-> particle (update :life-ms - delta-time)))))))))
+                          (-> particle 
+                              (update-in [:speed 1] + (* -9.81 delta-ms))
+                              (update-in [:pos 0] + (* (-> particle :speed (get 0)) delta-ms))
+                              (update-in [:pos 1] + (* (-> particle :speed (get 1)) delta-ms))
+                              (update :life-ms - delta-time)))))))))
 
 (def gl-error-map
   {1280 "GL_INVALID_ENUM"
