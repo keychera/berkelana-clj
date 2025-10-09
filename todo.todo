@@ -37,9 +37,15 @@ todo:
             ✔ typing text @done(25-09-15 20:59)
             ✔ positions @done(25-09-15 20:59)
             ☐ timeline
-        
+    
+    ☐ gl only
+        ☐ review what you did
+        ☐ the standardized position(transform?) + camera + try not limit to 2d
+        ☐ repeat the tutorial from the beginning? 
+        ☐ gl + odoyle?
 
-    ☐ Scenes
+    ☐ Scenes Transition, 
+        ☐ we are thinking that masking is needed to achieve the circular transition
         ☐ menu
         ☐ intro
         ☐ chapter1
@@ -66,7 +72,7 @@ todo:
 
     ☐ particle
         ✔ generating particle with drawArrayInstanced @done(25-10-08 00:20)
-        ☐ the simple physics
+        ✔ the simple physics @done(25-10-09 22:31)
         ☐ the sampler2d
         ☐ the transform system
         ✔ particle not rendering at all on jvm game @done(25-10-08 21:57)
@@ -159,7 +165,7 @@ devs:
 
     ☐ error loses its stack trace most of the time but somehow if we 1. hot-reload the error origin 2. not catch them 3. browser will get the stack trace
     
-
+    ☐ looking forward to a jankier clojure
 
 upstream:
     ☐ play-cljc shader compile error when inserting uniform that is not declared inside shader
@@ -171,3 +177,5 @@ upstream:
         ☐ check iglu impl on :number https://github.com/oakes/iglu/blob/68e48f8fd2ac6590b6b43fb071a67c8de8c663ce/src/iglu/glsl.cljc#L109
     ☐ tiled-soup for newer version of tiled
     ☐ more performant chars/assoc-char for play-cljc-example (1d7afacbb7754fe16c1f59daae57973bd4631681), still has a bit that can be improved
+        ☐ https://github.com/oakes/play-cljc/issues/28
+    ☐ iglu layout qualifier

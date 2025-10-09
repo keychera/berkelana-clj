@@ -7,7 +7,6 @@
    [assets.texts :as texts]
    [assets.tiled :as tiled]
    [com.rpl.specter :as sp]
-   [engine.particle :as particle]
    [engine.refresh :refer [*refresh?]]
    [engine.utils :as utils]
    [engine.world :as world]
@@ -84,7 +83,7 @@
                  (o/fire-rules))))
     (def hmm-game game)
     (compile-all game)
-    (particle/init game)))
+    #_(particle/init game)))
 
 (def screen-entity
   {:viewport {:x 0 :y 0 :width 0 :height 0}
@@ -129,7 +128,7 @@
                              (update :viewport assoc :width game-width :height game-height)))
           (doseq [render-fn @(::render-fns* game)]
             (render-fn world game camera game-width game-height))
-          (particle/render world game)))
+          #_(particle/render world game)))
       #?(:clj  (catch Exception err (throw err))
          :cljs (catch js/Error err (log-once game err "[tick-error] ")))))
   game)
