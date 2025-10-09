@@ -17,15 +17,18 @@
 (st/instrument)
 
 (defonce fps-counter*
-  (r/atom {:last-time (js/performance.now) :frames 0 :fps 0}))
+  (r/atom {:last-time (js/performance.now) 
+           :frames 0
+           :delta-ms 0
+           :fps 0}))
 
-(defn ^:vibe update-fps! []
-  (let [now (js/performance.now)
+(defn ^:vibe update-fps! [game]
+  (let [{:keys [delta-time total-time]} game
         {:keys [last-time frames]} @fps-counter*
-        delta (- now last-time)]
-    (if (> delta 1000) ;; 1 second has passed
-      (swap! fps-counter* assoc :last-time now :frames 0 :fps frames)
-      (swap! fps-counter* update :frames inc))))
+        since-last-time (- total-time last-time)]
+    (if (> since-last-time 1000) ;; 1 second has passed
+      (swap! fps-counter* assoc :last-time total-time :frames 0 :fps frames)
+      (swap! fps-counter* assoc :frames (inc frames) :delta-ms delta-time))))
 
 (defonce dev-atom*
   (r/atom {:dev-value  "raw value"
@@ -80,7 +83,7 @@
     (swap! dev-atom* assoc :dev-value (:value dev-value))))
 
 (defn dev-loop [game]
-  (update-fps!)
+  (update-fps! game)
   (listen-to-dev-events! game))
 
 (defonce dev-only
