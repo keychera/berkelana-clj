@@ -9,7 +9,8 @@
             "menuSelections": {
                 "cljAliases": [
                     "shadow-cljs"
-                ]
+                ],
+                "cljsDefaultBuild": ":game"
             }
         },
         {
