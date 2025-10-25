@@ -71,14 +71,18 @@
   (let [[game-width game-height] (utils/get-size game)
         all-rules   (apply concat (sp/select [sp/ALL ::world/rules] all-systems))
         all-init    (sp/select [sp/ALL ::world/init-fn some?] all-systems)
-        reload-fns  (sp/select [sp/ALL ::world/reload-fn some?] all-systems)
+        before-fns  (sp/select [sp/ALL ::world/before-fn some?] all-systems)
+        after-fns   (sp/select [sp/ALL ::world/after-fn some?] all-systems)
         render-fns  (sp/select [sp/ALL ::world/render-fn some?] all-systems)]
     (swap! (::world/init-cnt* game) inc)
     (reset! (::render-fns* game) render-fns)
     (swap! (::world/atom* game)
            (fn [world]
-             (-> (world/init-world world game all-rules reload-fns)
-                 (as-> w (reduce (fn [w' init-fn] (init-fn w' game)) w all-init))
+             (-> (world/init-world world game all-rules before-fns after-fns)
+                 ((fn [world]
+                    (if (world/first-init? game)
+                      (reduce (fn [w' init-fn] (init-fn w' game)) world all-init)
+                      world)))
                  (window/set-window game-width game-height)
                  (o/fire-rules))))
     (def hmm-game game)

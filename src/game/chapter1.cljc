@@ -17,7 +17,7 @@
 ;; world system require spec.alpha
 (s/def ::this any?)
 
-(defn initial-esse [world game]
+(defn initial-esse [world]
   (-> world
       (o/insert ::world/global ::room/currently-at :room/yard)
       (o/insert :room/yard {::room/boundary {:x 0 :y 0 :width 8 :height 8}
@@ -30,7 +30,7 @@
       (esse :prop/bucket
             grid-move/default #::grid-move{:pos-x 5 :pos-y 5 :pushable? true}
             #::room{:currently-at :room/yard}
-            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 9) 5)}) 
+            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 9) 5)})
       (esse :prop/shader
             grid-move/default #::grid-move{:pos-x 3 :pos-y 5 :pushable? true}
             #::room{:currently-at :room/yard}
@@ -40,26 +40,25 @@
       (esse :prop/kani
             grid-move/default #::grid-move{:pos-x 12 :pos-y 4 :unwalkable? true}
             #::room{:currently-at :room/home}
-            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 18) 28)})
-      (cond->
-       (not (world/first-init? game))
-        (-> (esse :id/berkelana #::asset{:loaded? true})
-            (esse :id/worldmap #::asset{:loaded? true})))))
+            #::sprites{:sprite-from-asset :id/worldmap :frame-index (+ (* 48 18) 28)})))
 
 (world/system system
   {::world/init-fn
    (fn [world game]
-     (tap> world)
      (-> world
-         (cond->
-          (world/first-init? game)
-           (-> (asset :id/berkelana
-                      #::asset{:type ::asset/spritesheet :img-to-load "berkelana.png"}
-                      #::spritesheet{:frame-width 32 :frame-height 32})
-               (asset :id/worldmap
-                      #::asset{:type ::asset/tiledmap}
-                      #::tiled{:parsed-tmx tiled/world-map-tmx})))
-         (initial-esse game)))
+         (asset :id/berkelana
+                #::asset{:type ::asset/spritesheet :img-to-load "berkelana.png"}
+                #::spritesheet{:frame-width 32 :frame-height 32})
+         (asset :id/worldmap
+                #::asset{:type ::asset/tiledmap}
+                #::tiled{:parsed-tmx tiled/world-map-tmx})))
+
+   ::world/after-fn
+   (fn [world _game]
+     (-> world
+         (initial-esse)
+         (esse :id/berkelana #::asset{:loaded? true})
+         (esse :id/worldmap #::asset{:loaded? true})))
 
    ::world/rules
    (o/ruleset
@@ -70,4 +69,4 @@
       :then
       (println "resetting world!")
       (swap! (::world/init-cnt* game) inc)
-      (s-> (initial-esse session game))]})})
+      (s-> session (initial-esse))]})})

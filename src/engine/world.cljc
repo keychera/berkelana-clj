@@ -10,7 +10,8 @@
 ;; game system
 (s/def ::game map?)
 (s/def ::init-fn   fn? #_(fn [world game] world))
-(s/def ::reload-fn fn? #_(fn [world game] world))
+(s/def ::before-fn fn? #_(fn [world game] world)) ;; before init/reset
+(s/def ::after-fn  fn? #_(fn [world game] world)) ;; after init/reset
 (s/def ::render-fn fn? #_(fn [world game camera game-width game-height] world))
 
 (s/def ::rule #(instance? odoyle.rules.Rule %))
@@ -19,7 +20,7 @@
 (expound/defmsg ::rules "rules must be odoyle.rules/ruleset\n  e.g. (o/ruleset {...})")
 
 (s/def ::system
-  (s/keys :opt [::rules ::init-fn ::reload-fn ::render-fn]))
+  (s/keys :opt [::rules ::init-fn ::before-fn ::render-fn]))
 
 (s/def ::control #{:reset})
 
@@ -53,22 +54,24 @@
                   ;; (println :then-finally (:name rule))
                   (f session))}))
 
-
 ;; dev-only
 (defn first-init? [game]
   (= 1 @(::init-cnt* game)))
 
-(defn init-world [world game all-rules reload-fns]
+(defn init-world [world game all-rules before-fns after-fns]
   (let [prev-rules* (::prev-rules* game)
-        session     (if (first-init? game)
-                      (o/->session)
-                      (let [world
-                            (reduce (fn [world reload-fn] (reload-fn world game)) world reload-fns)]
-                        (->> @prev-rules* ;; dev-only : refresh rules without resetting facts
-                             (map :name)
-                             (reduce o/remove-rule world))))]
-    (reset! prev-rules* all-rules)
-    (-> (->> all-rules
-             (map #'rules-debugger-wrap-fn)
-             (reduce o/add-rule session))
-        (o/insert ::global ::game game))))
+        world-before (if (first-init? game)
+                       (o/->session)
+                       (let [world
+                             (reduce (fn [world before-fn] (before-fn world game)) world before-fns)]
+                         (->> @prev-rules* ;; devonly : refresh rules without resetting facts
+                              (map :name)
+                              (reduce o/remove-rule world))))
+        _            (reset! prev-rules* all-rules)
+        reset-world  (-> (->> all-rules
+                              (map #'rules-debugger-wrap-fn)
+                              (reduce o/add-rule world-before))
+                         (o/insert ::global ::game game))
+        world-after  (reduce (fn [world after-fn] (after-fn world game)) reset-world after-fns)]
+    world-after))
+

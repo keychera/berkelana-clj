@@ -14,7 +14,7 @@
 (s/def ::db* #(instance? #?(:clj clojure.lang.Atom :cljs Atom) %))
 
 (world/system system
-  {::world/init-fn
+  {::world/after-fn
    (fn [world game]
      (o/insert world ::global ::db* (::db* game)))
 
