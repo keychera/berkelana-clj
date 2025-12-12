@@ -7,5 +7,4 @@
            engine.world/system clojure.core/def}
  :config-in-call
  {play-cljc.macros-java/gl {:ignore [:unresolved-symbol]}
-  play-cljc.macros-js/gl {:ignore [:unresolved-symbol]}
-  odoyle.rules/ruleset {:ignore [:unresolved-symbol]}}}
+  play-cljc.macros-js/gl {:ignore [:unresolved-symbol]}}}
